@@ -48,7 +48,11 @@ void GVM_ShutdownGame( int restart ) {
 }
 
 char *GVM_ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
-	return (char *)VM_Call( gvm, GAME_CLIENT_CONNECT, clientNum, firstTime, isBot );
+	intptr_t denied = VM_Call( gvm, GAME_CLIENT_CONNECT, clientNum, firstTime, isBot );
+	if ( denied ) {
+		return (char *)VM_ExplicitArgPtr( gvm, denied );
+	}
+	return nullptr;
 }
 
 void GVM_ClientBegin( int clientNum ) {
