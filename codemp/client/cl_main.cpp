@@ -87,8 +87,8 @@ cvar_t	*cl_inGameVideo;
 
 cvar_t	*cl_serverStatusResendTime;
 cvar_t	*cl_framerate;
-// cvar to enable sending a "ja_guid" player identifier in userinfo to servers
-// ja_guid is a persistent "cookie" that allows servers to track players across game sessions
+// cvar to enable sending a "cl_guid" player identifier in userinfo to servers
+// cl_guid is a persistent "cookie" that allows servers to track players across game sessions
 cvar_t	*cl_enableGuid;
 cvar_t	*cl_guidServerUniq;
 
@@ -732,21 +732,21 @@ static void CL_UpdateGUID( const char *prefix, int prefix_len )
 
 		// initialize the cvar here in case it's unset or was user-created
 		// while tracking was disabled (removes CVAR_USER_CREATED)
-		Cvar_Get( "ja_guid", "", CVAR_USERINFO | CVAR_ROM, "Client GUID" );
+		Cvar_Get( "cl_guid", "", CVAR_USERINFO | CVAR_ROM, "Client GUID" );
 
 		if( len != QKEY_SIZE ) {
-			Cvar_Set( "ja_guid", "" );
+			Cvar_Set( "cl_guid", "" );
 		} else {
-			Cvar_Set( "ja_guid", Com_MD5File( QKEY_FILE, QKEY_SIZE,
+			Cvar_Set( "cl_guid", Com_MD5File( QKEY_FILE, QKEY_SIZE,
 				prefix, prefix_len ) );
 		}
 	} else {
 		// Remove the cvar entirely if tracking is disabled
-		uint32_t flags = Cvar_Flags("ja_guid");
+		uint32_t flags = Cvar_Flags("cl_guid");
 		// keep the cvar if it's user-created, but destroy it otherwise
 		if (flags != CVAR_NONEXISTENT && !(flags & CVAR_USER_CREATED)) {
-			cvar_t *ja_guid = Cvar_Get("ja_guid", "", 0, "Client GUID" );
-			Cvar_Unset(ja_guid);
+			cvar_t *cl_guid = Cvar_Get("cl_guid", "", 0, "Client GUID" );
+			Cvar_Unset(cl_guid);
 		}
 	}
 }
@@ -2619,7 +2619,7 @@ void CL_Init( void ) {
 
 	cl_lanForcePackets = Cvar_Get ("cl_lanForcePackets", "1", CVAR_ARCHIVE);
 
-	// enable the ja_guid player identifier in userinfo by default in OpenJK
+	// enable the cl_guid player identifier in userinfo by default in OpenJK
 	cl_enableGuid = Cvar_Get("cl_enableGuid", "1", CVAR_ARCHIVE, "Enable GUID userinfo identifier" );
 	cl_guidServerUniq = Cvar_Get ("cl_guidServerUniq", "1", CVAR_ARCHIVE, "Use a unique guid value per server" );
 
