@@ -1,12 +1,32 @@
-// Copyright (C) 1999-2000 Id Software, Inc.
-//
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
+#pragma once
+
 // bg_public.h -- definitions shared by both the server game and client game modules
 
 // because games can change separately from the main system version, we need a
 // second version that must match between game and cgame
-
-#ifndef __BG_PUBLIC_H__
-#define __BG_PUBLIC_H__
 
 #include "bg_weapons.h"
 #include "anims.h"
@@ -211,7 +231,7 @@ typedef enum direction_e
 
 PMOVE MODULE
 
-The pmove code takes a player_state_t and a usercmd_t and generates a new player_state_t
+The pmove code takes a playerState_t and a usercmd_t and generates a new playerState_t
 and some other output data.  Used for local prediction on the client game and true
 movement on the server game.
 ===================================================================================
@@ -328,7 +348,7 @@ typedef struct bgEntity_s
 	} bgEntity_t;
 #endif
 
-typedef struct {
+typedef struct pmove_s {
 	// state (in / out)
 	playerState_t	*ps;
 
@@ -358,6 +378,7 @@ typedef struct {
 
 	// for fixed msec Pmove
 	int			pmove_fixed;
+	int			pmove_float;
 	int			pmove_msec;
 
 	// callbacks to test the world
@@ -392,7 +413,7 @@ void Pmove (pmove_t *pmove);
 //===================================================================================
 
 
-// player_state->stats[] indexes
+// playerState_t->stats[] indexes
 // NOTE: may not have more than 16
 typedef enum {
 	STAT_HEALTH,
@@ -412,8 +433,8 @@ typedef enum {
 } statIndex_t;
 
 
-// player_state->persistant[] indexes
-// these fields are the only part of player_state that isn't
+// playerState_t->persistant[] indexes
+// these fields are the only part of playerState_t that isn't
 // cleared on respawn
 // NOTE: may not have more than 16
 typedef enum {
@@ -480,6 +501,7 @@ typedef enum
 // reward sounds (stored in ps->persistant[PERS_PLAYEREVENTS])
 #define	PLAYEREVENT_DENIEDREWARD		0x0001
 #define	PLAYEREVENT_GAUNTLETREWARD		0x0002
+//OJKFIXME: add holy shit :D
 #define PLAYEREVENT_HOLYSHIT			0x0004
 
 // entityState_t->event values
@@ -689,7 +711,7 @@ qboolean	BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 
 //rwwRMG - added in CONTENTS_TERRAIN
 // content masks
-#define	MASK_ALL				(-1)
+#define	MASK_ALL				(0xFFFFFFFFu)
 #define	MASK_SOLID				(CONTENTS_SOLID|CONTENTS_TERRAIN)
 #define	MASK_PLAYERSOLID		(CONTENTS_SOLID|CONTENTS_TERRAIN|CONTENTS_PLAYERCLIP|CONTENTS_BODY|CONTENTS_SHOTCLIP)
 #define	MASK_DEADSOLID			(CONTENTS_SOLID|CONTENTS_TERRAIN|CONTENTS_PLAYERCLIP)
@@ -736,141 +758,9 @@ typedef enum {
 							// this avoids having to set eFlags and eventNum
 } entityType_t;
 
-// Okay, here lies the much-dreaded Pat-created FSM movement chart...  Heretic II strikes again!
-// Why am I inflicting this on you?  Well, it's better than hardcoded states.
-// Ideally this will be replaced with an external file or more sophisticated move-picker
-// once the game gets out of prototype stage.
-
-// rww - Moved all this to bg_public so that we can access the saberMoveData stuff on the cgame
-// which is currently used for determining if a saber trail should be rendered in a given frame
-#ifdef LS_NONE
-#undef LS_NONE
-#endif
-bgEntity_t *PM_BGEntForNum( int num );
-qboolean BG_KnockDownable(playerState_t *ps);
-
-
-#ifdef __LCC__ //can't inline it then, it is declared over in bg_misc in this case
-void BG_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
-#else
-// given a boltmatrix, return in vec a normalised vector for the axis requested in flags
-static ID_INLINE void BG_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec)
-{
-	switch (flags)
-	{
-	case ORIGIN:
-		vec[0] = boltMatrix->matrix[0][3];
-		vec[1] = boltMatrix->matrix[1][3];
-		vec[2] = boltMatrix->matrix[2][3];
-		break;
-	case POSITIVE_Y:
-		vec[0] = boltMatrix->matrix[0][1];
-		vec[1] = boltMatrix->matrix[1][1];
-		vec[2] = boltMatrix->matrix[2][1];
- 		break;
-	case POSITIVE_X:
-		vec[0] = boltMatrix->matrix[0][0];
-		vec[1] = boltMatrix->matrix[1][0];
-		vec[2] = boltMatrix->matrix[2][0];
-		break;
-	case POSITIVE_Z:
-		vec[0] = boltMatrix->matrix[0][2];
-		vec[1] = boltMatrix->matrix[1][2];
-		vec[2] = boltMatrix->matrix[2][2];
-		break;
-	case NEGATIVE_Y:
-		vec[0] = -boltMatrix->matrix[0][1];
-		vec[1] = -boltMatrix->matrix[1][1];
-		vec[2] = -boltMatrix->matrix[2][1];
-		break;
-	case NEGATIVE_X:
-		vec[0] = -boltMatrix->matrix[0][0];
-		vec[1] = -boltMatrix->matrix[1][0];
-		vec[2] = -boltMatrix->matrix[2][0];
-		break;
-	case NEGATIVE_Z:
-		vec[0] = -boltMatrix->matrix[0][2];
-		vec[1] = -boltMatrix->matrix[1][2];
-		vec[2] = -boltMatrix->matrix[2][2];
-		break;
-	}
-}
-#endif
-
-
-void BG_IK_MoveArm(void *ghoul2, int lHandBolt, int time, entityState_t *ent, int basePose, vec3_t desiredPos, qboolean *ikInProgress,
-					 vec3_t origin, vec3_t angles, vec3_t scale, int blendTime, qboolean forceHalt);
-
-void BG_G2PlayerAngles(void *ghoul2, int motionBolt, entityState_t *cent, int time, vec3_t cent_lerpOrigin,
-					   vec3_t cent_lerpAngles, vec3_t legs[3], vec3_t legsAngles, qboolean *tYawing,
-					   qboolean *tPitching, qboolean *lYawing, float *tYawAngle, float *tPitchAngle,
-					   float *lYawAngle, int frametime, vec3_t turAngles, vec3_t modelScale, int ciLegs,
-					   int ciTorso, int *corrTime, vec3_t lookAngles, vec3_t lastHeadAngles, int lookTime,
-					   entityState_t *emplaced, int *crazySmoothFactor);
-void BG_G2ATSTAngles(void *ghoul2, int time, vec3_t cent_lerpAngles );
-
-//BG anim utility functions:
-
-int BG_AnimLength( int index, animNumber_t anim );
-
-qboolean BG_InSpecialJump( int anim );
-qboolean BG_InReboundJump( int anim );
-qboolean BG_InReboundHold( int anim );
-qboolean BG_InReboundRelease( int anim );
-qboolean BG_InBackFlip( int anim );
-qboolean BG_DirectFlippingAnim( int anim );
-qboolean BG_KickMove( int move );
-qboolean BG_FlippingAnim( int anim );
-qboolean BG_KickingAnim( int anim );
-int BG_InGrappleMove(int anim);
-int BG_BrokenParryForAttack( int move );
-int BG_BrokenParryForParry( int move );
-int BG_KnockawayForParry( int move );
-qboolean BG_InRoll( playerState_t *ps, int anim );
-qboolean BG_InDeathAnim( int anim );
-
-void	BG_EvaluateTrajectory( const trajectory_t *tr, int atTime, vec3_t result );
-void	BG_EvaluateTrajectoryDelta( const trajectory_t *tr, int atTime, vec3_t result );
-
-void	BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t *ps );
-
-void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad );
-
-void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap );
-void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );
-
-qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
-
-void	BG_InitAnimsets(void);
-void	BG_ClearAnimsets(void);
-int		BG_ParseAnimationFile(const char *filename, animation_t *animSet, qboolean isHumanoid);
-#ifndef QAGAME
-int		BG_ParseAnimationEvtFile( const char *as_filename, int animFileIndex, int eventFileIndex );
-#endif
-
-qboolean BG_HasAnimation(int animIndex, int animation);
-int		BG_PickAnim( int animIndex, int minAnim, int maxAnim );
-
-int BG_GetItemIndexByTag(int tag, int type);
-
-qboolean BG_IsItemSelectable(playerState_t *ps, int item);
-
-qboolean BG_HasYsalamiri(int gametype, playerState_t *ps);
-qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time);
-
-extern void BG_AttachToRancor( void *ghoul2,float rancYaw,vec3_t rancOrigin,int time,qhandle_t *modelList,vec3_t modelScale,qboolean inMouth,vec3_t out_origin,vec3_t out_angles,vec3_t out_axis[3] );
-void BG_ClearRocketLock( playerState_t *ps );
-
-extern int WeaponReadyAnim[WP_NUM_WEAPONS];
-extern int WeaponAttackAnim[WP_NUM_WEAPONS];
-
-
 #define ARENAS_PER_TIER		4
 #define MAX_ARENAS			1024
 #define	MAX_ARENAS_TEXT		8192
 
 #define MAX_BOTS			1024
 #define MAX_BOTS_TEXT		8192
-
-
-#endif //__BG_PUBLIC_H__

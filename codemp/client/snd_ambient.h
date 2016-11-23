@@ -1,27 +1,30 @@
-#ifndef	__SND_AMBIENT__
-#define __SND_AMBIENT__
+/*
+===========================================================================
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
 
-// Includes
+This file is part of the OpenJK source code.
 
-#pragma warning ( disable : 4786 )
-#pragma warning ( disable : 4511 )	//copy constructor could not be gen
-#pragma warning ( disable : 4512 )	//assign constructor could not be gen
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-//these don't work because stl re-sets them
-//#pragma warning ( disable : 4663 )	//spcialize class
-//#pragma warning ( disable : 4018 )	//signed/unsigned
-#pragma warning (disable:4503)	// decorated name length xceeded, name was truncated
-#pragma warning (push, 3)	//go back down to 3 for the stl include
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
+#pragma once
 
 #include "qcommon/sstring.h"	// #include <string>
 #include <vector>
 #include <map>
-#pragma warning (pop)
-#pragma warning (disable:4503)	// decorated name length xceeded, name was truncated
-
-using namespace std;
-
-// Defines
 
 #define	AMBIENT_SET_FILENAME	"sound/sound.txt"
 
@@ -50,7 +53,7 @@ enum setKeyword_e
 	SET_KEYWORD_AMSDIR,
 	SET_KEYWORD_OUTDIR,
 	SET_KEYWORD_BASEDIR,
-	
+
 	NUM_AS_KEYWORDS,
 };
 
@@ -84,7 +87,7 @@ public:
 	CSetGroup();
 	~CSetGroup();
 
-	void Init( void ) 
+	void Init( void )
 	{
 		Free();
 	}
@@ -92,15 +95,15 @@ public:
 	void Free( void );
 
 	ambientSet_t *AddSet( const char *name );
-	
+
 	ambientSet_t *GetSet ( const char *name );
 	ambientSet_t *GetSet ( int ID );
 
 protected:
 
 	int								m_numSets;
-	vector < ambientSet_t * >		*m_ambientSets;
-	map	< sstring_t, ambientSet_t * >	*m_setMap;
+	std::vector < ambientSet_t * >		*m_ambientSets;
+	std::map	< sstring_t, ambientSet_t * >	*m_setMap;
 };
 
 // Prototypes
@@ -114,5 +117,3 @@ extern void S_UpdateAmbientSet ( const char *name, vec3_t origin );
 extern int S_AddLocalSet( const char *name, vec3_t listener_origin, vec3_t origin, int entID, int time );
 
 extern sfxHandle_t	AS_GetBModelSound( const char *name, int stage );
-
-#endif	//__SND_AMBIENT__

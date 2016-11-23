@@ -1,8 +1,4 @@
-#if defined (_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
-#endif
-#if !defined __TR_WORLDEFFECTS_H
-#define __TR_WORLDEFFECTS_H
 
 class CWorldEffectsSystem;
 
@@ -38,7 +34,7 @@ public:
 public:
 			CWorldEffect(CWorldEffect *owner = 0);
 	virtual ~CWorldEffect(void);
-	
+
 	void			SetNext(CWorldEffect *next) { mNext = next; }
 	CWorldEffect	*GetNext(void) { return mNext; }
 	void			SetSlave(CWorldEffect *slave) { mSlave = slave; }
@@ -104,5 +100,3 @@ bool R_IsRaining();
 //bool R_IsSnowing();
 bool R_IsPuffing();
 void RE_AddWeatherZone(vec3_t mins, vec3_t maxs);
-
-#endif // __TR_WORLDEFFECTS_H

@@ -1,26 +1,42 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-// this include must remain at the top of every CPP file
-#include "client.h"
+/*
+===========================================================================
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
 
-#if !defined(FX_SCHEDULER_H_INC)
-	#include "FxScheduler.h"
-#endif
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
+#include "client.h"
+#include "cl_cgameapi.h"
+#include "FxScheduler.h"
 #include "ghoul2/G2.h"
 
 cvar_t	*fx_debug;
-#ifdef _SOF2DEV_
+#ifdef _DEBUG
 cvar_t	*fx_freeze;
 #endif
 cvar_t	*fx_countScale;
 cvar_t	*fx_nearCull;
-cvar_t	*fx_flashRadius;
 
 #define DEFAULT_EXPLOSION_RADIUS	512
 
 // Stuff for the FxHelper
 //------------------------------------------------------
-SFxHelper::SFxHelper(void) :
+SFxHelper::SFxHelper() :
 	mTime(0),
 	mOldTime(0),
 	mFrameTime(0),
@@ -28,7 +44,7 @@ SFxHelper::SFxHelper(void) :
 	refdef(0)
 {
 }
- 
+
 void SFxHelper::ReInit(refdef_t* pRefdef)
 {
 	mTime = 0;
@@ -54,7 +70,7 @@ void SFxHelper::Print( const char *msg, ... )
 //------------------------------------------------------
 void SFxHelper::AdjustTime( int frametime )
 {
-#ifdef _SOF2DEV_
+#ifdef _DEBUG
 	if ( fx_freeze->integer || ( frametime <= 0 ))
 #else
 	if ( frametime <= 0 )
@@ -69,7 +85,7 @@ void SFxHelper::AdjustTime( int frametime )
 		mOldTime = mTime;
 		mTime = frametime;
 		mFrameTime = mTime - mOldTime;
-		
+
 		mRealTime = mFrameTime * 0.001f;
 
 
@@ -91,10 +107,11 @@ void SFxHelper::CameraShake( vec3_t origin, float intensity, int radius, int tim
 	data->mRadius = radius;
 	data->mTime = time;
 
-	VM_Call( cgvm, CG_FX_CAMERASHAKE ); 
+	CGVM_CameraShake();
 }
 
 //------------------------------------------------------
+void CGVM_GetLerpData( TCGVectorData *data, vec3_t *origin, vec3_t *angles, vec3_t *modelscale );
 qboolean SFxHelper::GetOriginAxisFromBolt(CGhoul2Info_v *pGhoul2, int mEntNum, int modelNum, int boltNum, vec3_t /*out*/origin, vec3_t /*out*/axis[3])
 {
 	qboolean doesBoltExist;
@@ -103,20 +120,13 @@ qboolean SFxHelper::GetOriginAxisFromBolt(CGhoul2Info_v *pGhoul2, int mEntNum, i
 	TCGVectorData *data = (TCGVectorData*)cl.mSharedMemory;
 	data->mEntityNum = mEntNum;
 
-	VM_Call(cgvm, CG_GET_LERP_ANGLES);
-	vec3_t lerpAngles;
-	VectorCopy(data->mPoint, lerpAngles);
+	vec3_t lerpAngles, lerpOrigin, modelScale;
+	CGVM_GetLerpData( data, &lerpOrigin, &lerpAngles, &modelScale );
 
-	VM_Call(cgvm, CG_GET_LERP_ORIGIN);
-	vec3_t lerpOrigin;
-	VectorCopy(data->mPoint, lerpOrigin);
-
-	VM_Call(cgvm, CG_GET_MODEL_SCALE);
-	vec3_t modelScale;
-	VectorCopy(data->mPoint, modelScale);
+	//Fixme: optimize these VM calls away by storing 
 
 	// go away and get me the bolt position for this frame please
-	doesBoltExist = re.G2API_GetBoltMatrix(*pGhoul2, modelNum, boltNum, 
+	doesBoltExist = re->G2API_GetBoltMatrix(*pGhoul2, modelNum, boltNum,
 		&boltMatrix, lerpAngles, lerpOrigin, theFxHelper.mOldTime, 0, modelScale);
 
 	if (doesBoltExist)

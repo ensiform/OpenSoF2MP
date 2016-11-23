@@ -1,8 +1,9 @@
 #include "materials.h"
 
 #include "client/snd_public.h"
-#include "renderer/tr_types.h"
-#include "client/FXExport.h"
+#include "rd-common/tr_types.h"
+#include "ghoul2/ghoul2_shared.h"
+#include "FXExport.h"
 
 #include "qcommon/qcommon.h"
 #include "qcommon/GenericParser2.h"
@@ -11,11 +12,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-using std::list;
-using std::pair;
-using std::string;
-using std::vector;
 
 //-----------------------------------------------------------------
 //
@@ -26,7 +22,7 @@ using std::vector;
 //
 //-----------------------------------------------------------------
 class Sounds {
-	vector<int> _mediaList;
+	std::vector<int> _mediaList;
 public:
 	void addHandle(int item) {
 		_mediaList.push_back(item);
@@ -47,11 +43,11 @@ public:
 
 /// Material class keeping info about a specific material and it's sounds and effects
 class Material {
-	typedef pair<string, Sounds> SoundPair;
-	typedef pair<string, qhandle_t> EffectPair;
+	typedef std::pair<std::string, Sounds> SoundPair;
+	typedef std::pair<std::string, qhandle_t> EffectPair;
 
-	list<SoundPair> _sounds;
-	list<EffectPair> _effects;
+	std::list<SoundPair> _sounds;
+	std::list<EffectPair> _effects;
 
 	Material(const Material&); // don't allow copying
 public:
@@ -83,7 +79,7 @@ Material::Material(CGPGroup * const materialGroup) {
 			// Try to find some variations, add 0 and 1 to the end.
 			for (char soundNr = 48; soundNr < 50; ++soundNr) {
 				char localPath[MAX_QPATH];
-				sprintf(localPath, "%s%c\0", path, soundNr);
+				sprintf(localPath, "%s%c", path, soundNr);
 				sfxHandle_t sound = S_RegisterSound(localPath);
 				if (sound) {
 					sounds.addHandle(sound);
@@ -106,8 +102,8 @@ Material::Material(CGPGroup * const materialGroup) {
 
 /// Get the sound for the given key.
 sfxHandle_t Material::getSound(const char * key) const {
-	for (list<SoundPair>::const_iterator it = this->_sounds.begin(); it != this->_sounds.end(); ++it) {
-		if (!stricmp(key, it->first.c_str())) {
+	for (std::list<SoundPair>::const_iterator it = this->_sounds.begin(); it != this->_sounds.end(); ++it) {
+		if (!Q_stricmp(key, it->first.c_str())) {
 			return it->second.getHandle();
 		}
 	}
@@ -116,8 +112,8 @@ sfxHandle_t Material::getSound(const char * key) const {
 
 /// Get the effect for the given key.
 qhandle_t Material::getEffect(const char * key) const {
-	for (list<EffectPair>::const_iterator it = this->_effects.begin(); it != this->_effects.end(); ++it) {
-		if (!stricmp(key, it->first.c_str())) {
+	for (std::list<EffectPair>::const_iterator it = this->_effects.begin(); it != this->_effects.end(); ++it) {
+		if (!Q_stricmp(key, it->first.c_str())) {
 			return it->second;
 		}
 	}

@@ -1,9 +1,30 @@
-// Copyright (C) 1999-2000 Id Software, Inc.
-//
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
 #ifndef __CG_PUBLIC_H
 #define __CG_PUBLIC_H
 
-#define	CMD_BACKUP			64	
+#define	CMD_BACKUP			64
 #define	CMD_MASK			(CMD_BACKUP - 1)
 // allow a lot of command backups for very fast systems
 // multiple commands may be combined into a single packet, so this
@@ -17,7 +38,7 @@
 // Snapshots are generated at regular time intervals by the server,
 // but they may not be sent if a client's rate level is exceeded, or
 // they may be dropped by the network.
-typedef struct {
+typedef struct snapshot_s {
 	int				snapFlags;			// SNAPFLAG_RATE_DELAYED, etc
 	int				ping;
 
@@ -34,12 +55,12 @@ typedef struct {
 	int				serverCommandSequence;	// snapshot becomes current
 } snapshot_t;
 
-enum {
-  CGAME_EVENT_NONE,
+typedef enum cgameEvent_e {
+	CGAME_EVENT_NONE=0,
   CGAME_EVENT_TEAMMENU,
   CGAME_EVENT_SCOREBOARD,
   CGAME_EVENT_EDITHUD
-};
+} cgameEvent_t;
 
 
 /*
@@ -52,8 +73,8 @@ functions imported from the main executable
 
 #define	CGAME_IMPORT_API_VERSION	5
 
-typedef enum {
-	CG_PRINT,
+typedef enum cgameImport_e {
+	CG_PRINT = 0,
 	CG_ERROR,
 	CG_MILLISECONDS,
 	CG_CVAR_REGISTER,
@@ -144,7 +165,6 @@ typedef enum {
 	CG_PC_SOURCE_FILE_AND_LINE,
 	CG_PC_LOAD_GLOBAL_DEFINES,
 	CG_PC_REMOVE_ALL_GLOBAL_DEFINES,
-
 	CG_MEMSET = 100,
 	CG_MEMCPY,
 	CG_STRNCPY,
@@ -181,7 +201,6 @@ typedef enum {
 	CG_FX_ADDLINE,
 	CG_S_ADDREALLOOPINGSOUND,
 	CG_S_STOPLOOPINGSOUND,
-
 	CG_CM_TEMPCAPSULEMODEL,
 	CG_CM_CAPSULETRACE,
 	CG_CM_TRANSFORMEDCAPSULETRACE,
@@ -189,7 +208,6 @@ typedef enum {
 	CG_GET_ENTITY_TOKEN,
 	CG_R_ADDPOLYSTOSCENE,
 	CG_R_INPVS,
-
 	CG_FX_REGISTER_EFFECT,
 	CG_FX_PLAY_SIMPLE_EFFECT,
 	CG_FX_PLAY_EFFECT,
@@ -204,7 +222,6 @@ typedef enum {
 	CG_FX_ADJUST_TIME,
 	CG_FX_DRAW_2D_EFFECTS,
 	CG_FX_RESET,
-
 	CG_G2_LISTBONES,
 	CG_G2_LISTSURFACES,
 
@@ -253,21 +270,21 @@ typedef enum {
 	CG_MAT_GET_EFFECT,
 	CG_MAT_GET_DEBRIS,
 	CG_MAT_GET_DEBRIS_SCALE,
-
+/*
 	CG_CM_TM_CREATE,
 	CG_CM_TM_ADDBUILDING,
 	CG_CM_TM_ADDSPOT,
 	CG_CM_TM_ADDTARGET,
 	CG_CM_TM_UPLOAD,
 	CG_CM_TM_CONVERT_POS,
-
-	// CGenericParser2 (void *) routines
+	//rww - RAGDOLL_END
+*/
 	GP_PARSE,
 	GP_PARSE_FILE,
 	GP_CLEAN,
 	GP_DELETE,
 	GP_GET_BASE_PARSE_GROUP,
-
+	//additional ragdoll options -rww
 	// CGPGroup (void *) routines
 	GPG_GET_NAME,
 	GPG_GET_NEXT,
@@ -281,7 +298,7 @@ typedef enum {
 	GPG_FIND_PAIR,
 	GPG_FIND_PAIRVALUE,
 
-	// CGPValue (void *) routines
+
 	GPV_GET_NAME,
 	GPV_GET_NEXT,
 	GPV_GET_INORDER_NEXT,
@@ -289,102 +306,48 @@ typedef enum {
 	GPV_IS_LIST,
 	GPV_GET_TOP_VALUE,
 	GPV_GET_LIST,
-
 	CG_CM_REGISTER_TERRAIN,
 	CG_RE_INIT_RENDERER_TERRAIN,
 
 	CG_SET_SHARED_BUFFER,
-
+	//Adding trap to get weather working
 	CG_VM_LOCALALLOC,
 	CG_VM_LOCALALLOCUNALIGNED,
 	CG_VM_LOCALTEMPALLOC,
 	CG_VM_LOCALTEMPFREE,
 	CG_VM_LOCALSTRINGALLOC,
-	
+
 	CG_UI_SETACTIVEMENU,
 	CG_UI_CLOSEALL,
 
 } cgameImport_t;
 
-
-/*
-==================================================================
-
-functions exported to the main executable
-
-==================================================================
-*/
-
-typedef enum {
+typedef enum cgameExport_e {
 	CG_INIT,
-//	void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum )
-	// called when the level loads or when the renderer is restarted
-	// all media should be registered at this time
-	// cgame will display loading status by calling SCR_Update, which
-	// will call CG_DrawInformation during the loading process
-	// reliableCommandSequence will be 0 on fresh loads, but higher for
-	// demos, tourney restarts, or vid_restarts
-
 	CG_SHUTDOWN,
-//	void (*CG_Shutdown)( void );
-	// oportunity to flush and close any open files
-
 	CG_CONSOLE_COMMAND,
-//	qboolean (*CG_ConsoleCommand)( void );
-	// a console command has been issued locally that is not recognized by the
-	// main game system.
-	// use Cmd_Argc() / Cmd_Argv() to read the command, return qfalse if the
-	// command is not known to the game
-
 	CG_DRAW_ACTIVE_FRAME,
-//	void (*CG_DrawActiveFrame)( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
-	// Generates and draws a game scene and status information at the given time.
-	// If demoPlayback is set, local movement prediction will not be enabled
-
 	CG_CROSSHAIR_PLAYER,
-//	int (*CG_CrosshairPlayer)( void );
-
 	CG_LAST_ATTACKER,
-//	int (*CG_LastAttacker)( void );
-
-	CG_KEY_EVENT, 
-//	void	(*CG_KeyEvent)( int key, qboolean down );
-
+	CG_KEY_EVENT,
 	CG_MOUSE_EVENT,
-//	void	(*CG_MouseEvent)( int dx, int dy );
 	CG_EVENT_HANDLING,
-//	void (*CG_EventHandling)(int type);
-
 	CG_POINT_CONTENTS,
-//	int	CG_PointContents( const vec3_t point, int passEntityNum );
-
 	CG_GET_LERP_ORIGIN,
-//	void CG_LerpOrigin(int num, vec3_t result);
-
 	CG_GET_LERP_ANGLES,
 	CG_GET_MODEL_SCALE,
 	CG_GET_GHOUL2,
 	CG_GET_MODEL_LIST,
-
 	CG_CALC_LERP_POSITIONS,
-//	void CG_CalcEntityLerpPositions(int num);
-
 	CG_TRACE,
-
-	CG_GET_ORIGIN,		// int entnum, vec3_t origin
-	CG_GET_ANGLES,		// int entnum, vec3_t angle
-
-	CG_GET_ORIGIN_TRAJECTORY,		// int entnum
-	CG_GET_ANGLE_TRAJECTORY,		// int entnum
-
+	CG_GET_ORIGIN,
+	CG_GET_ANGLES,
+	CG_GET_ORIGIN_TRAJECTORY,
+	CG_GET_ANGLE_TRAJECTORY,
 	CG_FX_CAMERASHAKE,
-
 	CG_MISC_ENT, //rwwRMG - added
-
 	CG_MAP_CHANGE,
-
 	CG_VOICE_EVENT,
-
 	CG_GET_TEAM_COUNT,
 	CG_GET_TEAM_SCORE,
 } cgameExport_t;

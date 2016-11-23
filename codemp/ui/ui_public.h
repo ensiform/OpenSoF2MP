@@ -1,11 +1,31 @@
-// Copyright (C) 2001-2002 Raven Software
-//
-#ifndef __UI_PUBLIC_H__
-#define __UI_PUBLIC_H__
+/*
+===========================================================================
+// Copyright (C) 1999-2000 Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
+#pragma once
 
 #define UI_API_VERSION	6
 
-typedef struct {
+typedef struct uiClientState_s {
 	connstate_t		connState;
 	int				connectPacketCount;
 	int				clientNum;
@@ -97,7 +117,6 @@ typedef enum
 	UI_PC_SOURCE_FILE_AND_LINE,			
 	UI_PC_LOAD_GLOBAL_DEFINES,
 	UI_PC_REMOVE_ALL_GLOBAL_DEFINES,
-
 	UI_S_STOPBACKGROUNDTRACK,
 	UI_S_STARTBACKGROUNDTRACK,
 	UI_REAL_TIME,
@@ -301,4 +320,3 @@ typedef enum
 
 } uiExport_t;
 
-#endif

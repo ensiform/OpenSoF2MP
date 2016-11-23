@@ -1,5 +1,25 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
 
 #include "tr_local.h"
 
@@ -18,7 +38,7 @@
 
 #define _STENCIL_REVERSE
 
-typedef struct {
+typedef struct edgeDef_s {
 	int		i2;
 	int		facing;
 } edgeDef_t;
@@ -28,6 +48,7 @@ typedef struct {
 static	edgeDef_t	edgeDefs[SHADER_MAX_VERTEXES][MAX_EDGE_DEFS];
 static	int			numEdgeDefs[SHADER_MAX_VERTEXES];
 static	int			facing[SHADER_MAX_INDEXES/3];
+static	vec3_t		shadowXyz[SHADER_MAX_VERTEXES];
 
 void R_AddEdgeDef( int i1, int i2, int facing ) {
 	int		c;
@@ -47,8 +68,8 @@ void R_RenderShadowEdges( void ) {
 	int		c;
 	int		j;
 	int		i2;
-	int		c_edges, c_rejected;
 #if 0
+	int		c_edges, c_rejected;
 	int		c2, k;
 	int		hit[2];
 #endif
@@ -61,8 +82,10 @@ void R_RenderShadowEdges( void ) {
 	// or if it has a reverse paired edge that also faces the light.
 	// A well behaved polyhedron would have exactly two faces for each edge,
 	// but lots of models have dangling edges or overfanned edges
+#if 0
 	c_edges = 0;
 	c_rejected = 0;
+#endif
 
 	for ( i = 0 ; i < tess.numVertexes ; i++ ) {
 		c = numEdgeDefs[ i ];
@@ -78,9 +101,9 @@ void R_RenderShadowEdges( void ) {
 			i2 = edgeDefs[ i ][ j ].i2;
 			qglBegin( GL_TRIANGLE_STRIP );
 				qglVertex3fv( tess.xyz[ i ] );
-				qglVertex3fv( tess.xyz[ i + tess.numVertexes ] );
+				qglVertex3fv( shadowXyz[ i ] );
 				qglVertex3fv( tess.xyz[ i2 ] );
-				qglVertex3fv( tess.xyz[ i2 + tess.numVertexes ] );
+				qglVertex3fv( shadowXyz[ i2 ] );
 			qglEnd();
 #else
 			hit[0] = 0;
@@ -100,9 +123,9 @@ void R_RenderShadowEdges( void ) {
 			{
 				qglBegin( GL_TRIANGLE_STRIP );
 				qglVertex3fv( tess.xyz[ i ] );
-				qglVertex3fv( tess.xyz[ i + tess.numVertexes ] );
+				qglVertex3fv( shadowXyz[ i ] );
 				qglVertex3fv( tess.xyz[ i2 ] );
-				qglVertex3fv( tess.xyz[ i2 + tess.numVertexes ] );
+				qglVertex3fv( shadowXyz[ i2 ] );
 				qglEnd();
 				c_edges++;
 			} else {
@@ -134,9 +157,9 @@ void R_RenderShadowEdges( void ) {
 			qglVertex3fv(tess.xyz[o3]);
 		qglEnd();
 		qglBegin(GL_TRIANGLES);
-			qglVertex3fv(tess.xyz[o3 + tess.numVertexes]);
-			qglVertex3fv(tess.xyz[o2 + tess.numVertexes]);
-			qglVertex3fv(tess.xyz[o1 + tess.numVertexes]);
+			qglVertex3fv(shadowXyz[o3]);
+			qglVertex3fv(shadowXyz[o2]);
+			qglVertex3fv(shadowXyz[o1]);
 		qglEnd();
 	}
 #endif
@@ -186,7 +209,7 @@ void RB_ShadowTessEnd( void )
 
 			RB_DoShadowTessEnd(dl->transformed);
 		}
-        
+
 		i++;
 	}
 	*/
@@ -204,11 +227,6 @@ void RB_DoShadowTessEnd( vec3_t lightPos )
 	int		i;
 	int		numTris;
 	vec3_t	lightDir;
-
-	// we can only do this if we have enough space in the vertex buffers
-	if ( tess.numVertexes >= SHADER_MAX_VERTEXES / 2 ) {
-		return;
-	}
 
 	if ( glConfig.stencilBits < 4 ) {
 		return;
@@ -234,16 +252,16 @@ void RB_DoShadowTessEnd( vec3_t lightPos )
 		VectorAdd(tess.xyz[i], backEnd.ori.origin, worldxyz);
 		groundDist = worldxyz[2] - backEnd.currentEntity->e.shadowPlane;
 		groundDist += 16.0f; //fudge factor
-		VectorMA( tess.xyz[i], -groundDist, lightDir, tess.xyz[i+tess.numVertexes] );
+		VectorMA( tess.xyz[i], -groundDist, lightDir, shadowXyz[i] );
 	}
 #else
 	if (lightPos)
 	{
 		for ( i = 0 ; i < tess.numVertexes ; i++ )
 		{
-			tess.xyz[i+tess.numVertexes][0] = tess.xyz[i][0]+(( tess.xyz[i][0]-lightPos[0] )*128.0f);
-			tess.xyz[i+tess.numVertexes][1] = tess.xyz[i][1]+(( tess.xyz[i][1]-lightPos[1] )*128.0f);
-			tess.xyz[i+tess.numVertexes][2] = tess.xyz[i][2]+(( tess.xyz[i][2]-lightPos[2] )*128.0f);
+			shadowXyz[i][0] = tess.xyz[i][0]+(( tess.xyz[i][0]-lightPos[0] )*128.0f);
+			shadowXyz[i][1] = tess.xyz[i][1]+(( tess.xyz[i][1]-lightPos[1] )*128.0f);
+			shadowXyz[i][2] = tess.xyz[i][2]+(( tess.xyz[i][2]-lightPos[2] )*128.0f);
 		}
 	}
 	else
@@ -252,7 +270,7 @@ void RB_DoShadowTessEnd( vec3_t lightPos )
 
 		// project vertexes away from light direction
 		for ( i = 0 ; i < tess.numVertexes ; i++ ) {
-			VectorMA( tess.xyz[i], -512, lightDir, tess.xyz[i+tess.numVertexes] );
+			VectorMA( tess.xyz[i], -512, lightDir, shadowXyz[i] );
 		}
 	}
 #endif

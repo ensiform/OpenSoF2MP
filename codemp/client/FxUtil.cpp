@@ -1,12 +1,27 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
-// this include must remain at the top of every CPP file
+/*
+===========================================================================
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
 #include "client.h"
-
-
-#if !defined(FX_SCHEDULER_H_INC)
-	#include "FxScheduler.h"
-#endif
+#include "FxScheduler.h"
 
 vec3_t	WHITE = {1.0f, 1.0f, 1.0f};
 
@@ -25,7 +40,7 @@ SFxHelper		theFxHelper;
 
 int				activeFx = 0;
 int				drawnFx;
-qboolean		fxInitialized = qfalse;	
+qboolean		fxInitialized = qfalse;
 
 //-------------------------
 // FX_Free
@@ -78,7 +93,7 @@ void FX_Stop( void )
 // Preps system for use
 //-------------------------
 int	FX_Init( refdef_t* refdef )
-{ 
+{
 //	FX_Free( true );
 	if ( fxInitialized == qfalse )
 	{
@@ -91,13 +106,12 @@ int	FX_Init( refdef_t* refdef )
 	}
 	nextValidEffect = &effectList[0];
 
-#ifdef _SOF2DEV_
+#ifdef _DEBUG
 	fx_freeze = Cvar_Get("fx_freeze", "0", CVAR_CHEAT);
 #endif
 	fx_debug = Cvar_Get("fx_debug", "0", CVAR_TEMP);
 	fx_countScale = Cvar_Get("fx_countScale", "1", CVAR_ARCHIVE);
 	fx_nearCull = Cvar_Get("fx_nearCull", "16", CVAR_ARCHIVE);
-	fx_flashRadius = Cvar_Get("fx_flashRadius", "11.0", CVAR_ARCHIVE);
 
 	theFxHelper.ReInit(refdef);
 
@@ -173,14 +187,14 @@ void FX_Add( bool portal )
 {
 	int			i;
 	SEffectList	*ef;
-	
+
 	drawnFx = 0;
 
 	int numFx = activeFx;	//but stop when there can't be any more left!
 	for ( i = 0, ef = effectList; i < MAX_EFFECTS && numFx; i++, ef++ )
 	{
 		if ( ef->mEffect != 0)
-		{ 
+		{
 			--numFx;
 			if (portal != ef->mPortal)
 			{
@@ -188,10 +202,10 @@ void FX_Add( bool portal )
 			}
 			// Effect is active
 			if ( theFxHelper.mTime > ef->mKillTime )
-			{ 
+			{
 				// Clean up old effects, calling any death effects as needed
 				// this flag just has to be cleared otherwise death effects might not happen correctly
-				ef->mEffect->ClearFlags( FX_KILL_ON_IMPACT ); 
+				ef->mEffect->ClearFlags( FX_KILL_ON_IMPACT );
 				FX_FreeMember( ef );
 			}
 			else
@@ -211,7 +225,7 @@ void FX_Add( bool portal )
 	{
 		theFxHelper.Print( "Active    FX: %i\n", activeFx );
 		theFxHelper.Print( "Drawn     FX: %i\n", drawnFx );
-		theFxHelper.Print( "Scheduled FX: %i\n", theFxScheduler.NumScheduledFx() );
+		theFxHelper.Print( "Scheduled FX: %i High: %i\n", theFxScheduler.NumScheduledFx(), theFxScheduler.GetHighWatermark() );
 	}
 }
 
@@ -242,15 +256,15 @@ void FX_AddPrimitive( CEffect **pEffect, int killTime )
 //-------------------------
 //  FX_AddParticle
 //-------------------------
-CParticle *FX_AddParticle( vec3_t org, vec3_t vel, vec3_t accel, float size1, float size2, float sizeParm, 
-							float alpha1, float alpha2, float alphaParm, 
+CParticle *FX_AddParticle( vec3_t org, vec3_t vel, vec3_t accel, float size1, float size2, float sizeParm,
+							float alpha1, float alpha2, float alphaParm,
 							vec3_t sRGB, vec3_t eRGB, float rgbParm,
 							float rotation, float rotationDelta,
 							vec3_t min, vec3_t max, float elasticity,
 							int deathID, int impactID,
-							int killTime, qhandle_t shader, int flags = 0, 
+							int killTime, qhandle_t shader, int flags = 0,
 							EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-							int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
+							CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
 {
 	if ( theFxHelper.mFrameTime < 1 )
 	{ // disallow adding effects when the system is paused
@@ -261,11 +275,11 @@ CParticle *FX_AddParticle( vec3_t org, vec3_t vel, vec3_t accel, float size1, fl
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			fx->SetOrigin1( NULL );
 			fx->SetOrgOffset( org );
-			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		else
 		{
@@ -343,9 +357,9 @@ CParticle *FX_AddParticle( vec3_t org, vec3_t vel, vec3_t accel, float size1, fl
 CLine *FX_AddLine( vec3_t start, vec3_t end, float size1, float size2, float sizeParm,
 									float alpha1, float alpha2, float alphaParm,
 									vec3_t sRGB, vec3_t eRGB, float rgbParm,
-									int killTime, qhandle_t shader, int flags = 0, 
+									int killTime, qhandle_t shader, int flags = 0,
 									EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-									int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/)
+									CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/)
 {
 	if ( theFxHelper.mFrameTime < 1 )
 	{ // disallow adding new effects when the system is paused
@@ -356,12 +370,12 @@ CLine *FX_AddLine( vec3_t start, vec3_t end, float size1, float size2, float siz
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			fx->SetOrigin1( NULL );
 			fx->SetOrgOffset( start ); //offset from bolt pos
 			fx->SetVel( end );	//vel is the vector offset from bolt+orgOffset
-			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		else
 		{
@@ -429,9 +443,9 @@ CLine *FX_AddLine( vec3_t start, vec3_t end, float size1, float size2, float siz
 CElectricity *FX_AddElectricity( vec3_t start, vec3_t end, float size1, float size2, float sizeParm,
 								float alpha1, float alpha2, float alphaParm,
 								vec3_t sRGB, vec3_t eRGB, float rgbParm,
-								float chaos, int killTime, qhandle_t shader, int flags = 0, 
+								float chaos, int killTime, qhandle_t shader, int flags = 0,
 								EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-								int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
+								CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
 {
 	if ( theFxHelper.mFrameTime < 1 )
 	{ // disallow adding new effects when the system is paused
@@ -442,12 +456,12 @@ CElectricity *FX_AddElectricity( vec3_t start, vec3_t end, float size1, float si
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			fx->SetOrigin1( NULL );
 			fx->SetOrgOffset( start );//offset
 			fx->SetVel( end );	//vel is the vector offset from bolt+orgOffset
-			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		else
 		{
@@ -507,7 +521,7 @@ CElectricity *FX_AddElectricity( vec3_t start, vec3_t end, float size1, float si
 		// in the editor, fx may now be NULL?
 		if ( fx )
 		{
-			fx->Initialize(); 
+			fx->Initialize();
 		}
 	}
 
@@ -518,16 +532,16 @@ CElectricity *FX_AddElectricity( vec3_t start, vec3_t end, float size1, float si
 //-------------------------
 //  FX_AddTail
 //-------------------------
-CTail *FX_AddTail( vec3_t org, vec3_t vel, vec3_t accel, 
-							float size1, float size2, float sizeParm, 
+CTail *FX_AddTail( vec3_t org, vec3_t vel, vec3_t accel,
+							float size1, float size2, float sizeParm,
 							float length1, float length2, float lengthParm,
 							float alpha1, float alpha2, float alphaParm,
 							vec3_t sRGB, vec3_t eRGB, float rgbParm,
-							vec3_t min, vec3_t max, float elasticity, 
+							vec3_t min, vec3_t max, float elasticity,
 							int deathID, int impactID,
-							int killTime, qhandle_t shader, int flags = 0, 
+							int killTime, qhandle_t shader, int flags = 0,
 							EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-							int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
+							CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
 {
 	if ( theFxHelper.mFrameTime < 1 )
 	{ // disallow adding effects when the system is paused
@@ -538,11 +552,11 @@ CTail *FX_AddTail( vec3_t org, vec3_t vel, vec3_t accel,
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			fx->SetOrigin1( NULL );
 			fx->SetOrgOffset( org );
-			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		else
 		{
@@ -625,15 +639,15 @@ CTail *FX_AddTail( vec3_t org, vec3_t vel, vec3_t accel,
 //-------------------------
 //  FX_AddCylinder
 //-------------------------
-CCylinder *FX_AddCylinder( vec3_t start, vec3_t normal, 
+CCylinder *FX_AddCylinder( vec3_t start, vec3_t normal,
 							float size1s, float size1e, float size1Parm,
 							float size2s, float size2e, float size2Parm,
 							float length1, float length2, float lengthParm,
 							float alpha1, float alpha2, float alphaParm,
 							vec3_t rgb1, vec3_t rgb2, float rgbParm,
-							int killTime, qhandle_t shader, int flags, 
+							int killTime, qhandle_t shader, int flags,
 							EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-							int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/,
+							CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/,
 							qboolean traceEnd)
 {
 	if ( theFxHelper.mFrameTime < 1 )
@@ -645,11 +659,11 @@ CCylinder *FX_AddCylinder( vec3_t start, vec3_t normal,
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			fx->SetOrigin1( NULL );
 			fx->SetOrgOffset( start );//offset
-			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		else
 		{
@@ -740,17 +754,17 @@ CCylinder *FX_AddCylinder( vec3_t start, vec3_t normal,
 //-------------------------
 //  FX_AddEmitter
 //-------------------------
-CEmitter *FX_AddEmitter( vec3_t org, vec3_t vel, vec3_t accel, 
+CEmitter *FX_AddEmitter( vec3_t org, vec3_t vel, vec3_t accel,
 								float size1, float size2, float sizeParm,
 								float alpha1, float alpha2, float alphaParm,
 								vec3_t rgb1, vec3_t rgb2, float rgbParm,
 								vec3_t angs, vec3_t deltaAngs,
-								vec3_t min, vec3_t max, float elasticity, 
+								vec3_t min, vec3_t max, float elasticity,
 								int deathID, int impactID, int emitterID,
 								float density, float variance,
-								int killTime, qhandle_t model, int flags = 0, 
+								int killTime, qhandle_t model, int flags = 0,
 								EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-								int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
+								CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
 {
 	if ( theFxHelper.mFrameTime < 1 )
 	{ // disallow adding effects when the system is paused
@@ -761,10 +775,10 @@ CEmitter *FX_AddEmitter( vec3_t org, vec3_t vel, vec3_t accel,
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			assert(0);//not done
-//			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+//			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		fx->SetMatImpactFX(matImpactFX);
 		fx->SetMatImpactParm(fxParm);
@@ -840,9 +854,9 @@ CEmitter *FX_AddEmitter( vec3_t org, vec3_t vel, vec3_t accel,
 //-------------------------
 CLight *FX_AddLight( vec3_t org, float size1, float size2, float sizeParm,
 							vec3_t rgb1, vec3_t rgb2, float rgbParm,
-							int killTime, int flags = 0, 
+							int killTime, int flags = 0,
 							EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-							int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/)
+							CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/)
 {
 	if ( theFxHelper.mFrameTime < 1 )
 	{ // disallow adding effects when the system is paused
@@ -853,11 +867,11 @@ CLight *FX_AddLight( vec3_t org, float size1, float size2, float sizeParm,
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			fx->SetOrigin1( NULL );
 			fx->SetOrgOffset( org );//offset
-			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		else
 		{
@@ -913,9 +927,9 @@ COrientedParticle *FX_AddOrientedParticle( vec3_t org, vec3_t norm, vec3_t vel, 
 						float rotation, float rotationDelta,
 						vec3_t min, vec3_t max, float bounce,
 						int deathID, int impactID,
-						int killTime, qhandle_t shader, int flags = 0, 
+						int killTime, qhandle_t shader, int flags = 0,
 						EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/,
-						int iGhoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
+						CGhoul2Info_v *ghoul2/*0*/, int entNum/*-1*/, int modelNum/*-1*/, int boltNum/*-1*/ )
 {
 	if ( theFxHelper.mFrameTime < 1 )
 	{ // disallow adding effects when the system is paused
@@ -926,11 +940,11 @@ COrientedParticle *FX_AddOrientedParticle( vec3_t org, vec3_t norm, vec3_t vel, 
 
 	if ( fx )
 	{
-		if (flags&FX_RELATIVE && iGhoul2>0)
+		if (flags&FX_RELATIVE && ghoul2 != NULL)
 		{
 			fx->SetOrigin1( NULL );
 			fx->SetOrgOffset( org );//offset
-			fx->SetBoltinfo( iGhoul2, entNum, modelNum, boltNum );
+			fx->SetBoltinfo( ghoul2, entNum, modelNum, boltNum );
 		}
 		else
 		{
@@ -1003,7 +1017,7 @@ COrientedParticle *FX_AddOrientedParticle( vec3_t org, vec3_t norm, vec3_t vel, 
 //-------------------------
 //  FX_AddPoly
 //-------------------------
-CPoly *FX_AddPoly( vec3_t *verts, vec2_t *st, int numVerts, 
+CPoly *FX_AddPoly( vec3_t *verts, vec2_t *st, int numVerts,
 							vec3_t vel, vec3_t accel,
 							float alpha1, float alpha2, float alphaParm,
 							vec3_t rgb1, vec3_t rgb2, float rgbParm,
@@ -1023,7 +1037,7 @@ CPoly *FX_AddPoly( vec3_t *verts, vec2_t *st, int numVerts,
 		for ( int i = 0; i < numVerts; i++ )
 		{
 			VectorCopy( verts[i], fx->mOrg[i] );
-			Vector2Copy( st[i], fx->mST[i] );
+			VectorCopy2( st[i], fx->mST[i] );
 		}
 
 		fx->SetVel( vel );
@@ -1076,11 +1090,11 @@ CPoly *FX_AddPoly( vec3_t *verts, vec2_t *st, int numVerts,
 //-------------------------
 //  FX_AddFlash
 //-------------------------
-CFlash *FX_AddFlash( vec3_t origin, 
+CFlash *FX_AddFlash( vec3_t origin,
 					float size1, float size2, float sizeParm,
 					float alpha1, float alpha2, float alphaParm,
 					vec3_t sRGB, vec3_t eRGB, float rgbParm,
-					int killTime, qhandle_t shader, int flags, 
+					int killTime, qhandle_t shader, int flags,
 					EMatImpactEffect matImpactFX /*MATIMPACTFX_NONE*/, int fxParm /*-1*/ )
 {
 	if ( theFxHelper.mFrameTime < 1 )
@@ -1091,11 +1105,6 @@ CFlash *FX_AddFlash( vec3_t origin,
 	if (!shader)
 	{ //yeah..this is bad, I guess, but SP seems to handle it by not drawing the flash, so I will too.
 		assert(shader);
-		return 0;
-	}
-
-	if (fx_flashRadius->value <= 0.0f)
-	{ // disallow adding new flash effects if radius is 0
 		return 0;
 	}
 
@@ -1151,7 +1160,7 @@ CFlash *FX_AddFlash( vec3_t origin,
 		fx->SetFlags( flags );
 
 //		fx->SetSTScale( 1.0f, 1.0f );
-		
+
 		fx->Init();
 
 		FX_AddPrimitive( (CEffect**)&fx, killTime );
@@ -1163,7 +1172,7 @@ CFlash *FX_AddFlash( vec3_t origin,
 //-------------------------
 //  FX_AddBezier
 //-------------------------
-CBezier *FX_AddBezier( vec3_t start, vec3_t end, 
+CBezier *FX_AddBezier( vec3_t start, vec3_t end,
 								vec3_t control1, vec3_t control1Vel,
 								vec3_t control2, vec3_t control2Vel,
 								float size1, float size2, float sizeParm,

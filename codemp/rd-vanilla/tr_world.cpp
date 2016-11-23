@@ -1,11 +1,27 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
 
 #include "tr_local.h"
-
-#ifdef VV_LIGHTING
-#include "tr_lightmanager.h"
-#endif
 
 inline void Q_CastShort2Float(float *f, const short *s)
 {
@@ -48,13 +64,13 @@ static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
 		return qtrue;
 	}
 
-	if ( tr.currentEntityNum != TR_WORLDENT ) {
+	if ( tr.currentEntityNum != REFENTITYNUM_WORLD ) {
 		sphereCull = R_CullLocalPointAndRadius( cv->localOrigin, cv->meshRadius );
 	} else {
 		sphereCull = R_CullPointAndRadius( cv->localOrigin, cv->meshRadius );
 	}
 	boxCull = CULL_OUT;
-	
+
 	// check for trivial reject
 	if ( sphereCull == CULL_OUT )
 	{
@@ -68,7 +84,7 @@ static qboolean	R_CullGrid( srfGridMesh_t *cv ) {
 
 		boxCull = R_CullLocalBox( cv->meshBounds );
 
-		if ( boxCull == CULL_OUT ) 
+		if ( boxCull == CULL_OUT )
 		{
 			tr.pc.c_box_cull_patch_out++;
 			return qtrue;
@@ -158,7 +174,7 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 			VectorSet(nNormal, 0.0f, 0.0f, 1.0f);
 			VectorMA(basePoint, 8192.0f, nNormal, endPoint);
 
-			ri.CM_BoxTrace(&tr, basePoint, endPoint, NULL, NULL, 0, (CONTENTS_SOLID|CONTENTS_TERRAIN), qfalse);
+			ri->CM_BoxTrace(&tr, basePoint, endPoint, NULL, NULL, 0, (CONTENTS_SOLID|CONTENTS_TERRAIN), qfalse);
 
 			if (!tr.startsolid &&
 				!tr.allsolid &&
@@ -176,7 +192,7 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 					while (i < 4096)
 					{
 						VectorMA(basePoint, i, nNormal, endPoint);
-						ri.CM_BoxTrace(&tr, endPoint, endPoint, NULL, NULL, 0, (CONTENTS_SOLID|CONTENTS_TERRAIN), qfalse);
+						ri->CM_BoxTrace(&tr, endPoint, endPoint, NULL, NULL, 0, (CONTENTS_SOLID|CONTENTS_TERRAIN), qfalse);
 						if (!tr.startsolid &&
 							!tr.allsolid &&
 							tr.fraction == 1.0f)
@@ -198,7 +214,7 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 						//If we hit something within a set amount of units, we will assume it's a bridge type object
 						//and leave it to be drawn. Otherwise we will assume it is a roof or other obstruction and
 						//cull it out.
-						ri.CM_BoxTrace(&tr, basePoint, endPoint, NULL, NULL, 0, (CONTENTS_SOLID|CONTENTS_TERRAIN), qfalse);
+						ri->CM_BoxTrace(&tr, basePoint, endPoint, NULL, NULL, 0, (CONTENTS_SOLID|CONTENTS_TERRAIN), qfalse);
 
 						if (!tr.startsolid &&
 							!tr.allsolid &&
@@ -220,7 +236,7 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 
 	// don't cull exactly on the plane, because there are levels of rounding
 	// through the BSP, ICD, and hardware that may cause pixel gaps if an
-	// epsilon isn't allowed here 
+	// epsilon isn't allowed here
 	if ( shader->cullType == CT_FRONT_SIDED ) {
 		if ( d < sface->plane.dist - 8 ) {
 			return qtrue;
@@ -234,7 +250,6 @@ static qboolean	R_CullSurface( surfaceType_t *surface, shader_t *shader ) {
 	return qfalse;
 }
 
-#ifndef VV_LIGHTING
 static int R_DlightFace( srfSurfaceFace_t *face, int dlightBits ) {
 	float		d;
 	int			i;
@@ -348,7 +363,6 @@ static int R_DlightSurface( msurface_t *surf, int dlightBits ) {
 
 	return dlightBits;
 }
-#endif // VV_LIGHTING
 
 
 
@@ -362,26 +376,22 @@ static float g_playerHeight = 0.0f;
 R_AddWorldSurface
 ======================
 */
-#ifdef VV_LIGHTING
-void R_AddWorldSurface( msurface_t *surf, int dlightBits, qboolean noViewCount ) 
-#else
 static void R_AddWorldSurface( msurface_t *surf, int dlightBits, qboolean noViewCount = qfalse )
-#endif
 {
 	if (!noViewCount)
 	{
-		if ( surf->viewCount == tr.viewCount ) 
+		if ( surf->viewCount == tr.viewCount )
 		{
 			// already in this view, but lets make sure all the dlight bits are set
-			if ( *surf->data == SF_FACE ) 
+			if ( *surf->data == SF_FACE )
 			{
 				((srfSurfaceFace_t *)surf->data)->dlightBits |= dlightBits;
-			} 
-			else if ( *surf->data == SF_GRID ) 
+			}
+			else if ( *surf->data == SF_GRID )
 			{
 				((srfGridMesh_t *)surf->data)->dlightBits |= dlightBits;
-			} 
-			else if ( *surf->data == SF_TRIANGLES ) 
+			}
+			else if ( *surf->data == SF_TRIANGLES )
 			{
 				((srfTriangles_t *)surf->data)->dlightBits |= dlightBits;
 			}
@@ -413,11 +423,7 @@ static void R_AddWorldSurface( msurface_t *surf, int dlightBits, qboolean noView
 
 	// check for dlighting
 	if ( dlightBits ) {
-#ifdef VV_LIGHTING
-		dlightBits = VVLightMan.R_DlightSurface( surf, dlightBits );
-#else
 		dlightBits = R_DlightSurface( surf, dlightBits );
-#endif
 		dlightBits = ( dlightBits != 0 );
 	}
 
@@ -541,24 +547,16 @@ void R_AddBrushModelSurfaces ( trRefEntity_t *ent ) {
 	if ( clip == CULL_OUT ) {
 		return;
 	}
-	
+
 	if(pModel->bspInstance)
 	{ //rwwRMG - added
-#ifdef VV_LIGHTING
-		VVLightMan.R_SetupEntityLighting(&tr.refdef, ent);
-#else
 		R_SetupEntityLighting(&tr.refdef, ent);
-#endif
 	}
 
 	//rww - Take this into account later?
-//	if ( !ri.Cvar_VariableIntegerValue( "com_RMG" ) )
+//	if ( !ri->Cvar_VariableIntegerValue( "com_RMG" ) )
 //	{	// don't dlight bmodels on rmg, as multiple copies of the same instance will light up
-#ifdef VV_LIGHTING
-		VVLightMan.R_DlightBmodel( bmodel, false );
-#else
 		R_DlightBmodel( bmodel, false );
-#endif
 //	}
 //	else
 //	{
@@ -576,7 +574,7 @@ float GetQuadArea( vec3_t v1, vec3_t v2, vec3_t v3, vec3_t v4 )
 
 	// Get area of tri1
 	VectorSubtract( v1, v2, vec1 );
-	VectorSubtract( v1, v4, vec2 ); 
+	VectorSubtract( v1, v4, vec2 );
 	CrossProduct( vec1, vec2, dis1 );
 	VectorScale( dis1, 0.25f, dis1 );
 
@@ -608,7 +606,7 @@ void RE_GetBModelVerts( int bmodelIndex, vec3_t *verts, vec3_t normal )
 	bmodel = pModel->bmodel;
 
 	// Loop through all surfaces on the brush and find the best two candidates
-	for ( i = 0 ; i < bmodel->numSurfaces; i++ ) 
+	for ( i = 0 ; i < bmodel->numSurfaces; i++ )
 	{
 		surfs = bmodel->firstSurface + i;
 		face = ( srfSurfaceFace_t *)surfs->data;
@@ -639,7 +637,7 @@ void RE_GetBModelVerts( int bmodelIndex, vec3_t *verts, vec3_t normal )
 	surfs = bmodel->firstSurface + maxIndx[0];
 	face = ( srfSurfaceFace_t *)surfs->data;
 	dot1 = DotProduct( face->plane.normal, tr.refdef.viewaxis[0] );
-	
+
 	surfs = bmodel->firstSurface + maxIndx[1];
 	face = ( srfSurfaceFace_t *)surfs->data;
 	dot2 = DotProduct( face->plane.normal, tr.refdef.viewaxis[0] );
@@ -797,6 +795,7 @@ static inline void R_EvaluateWireframeSurf(msurface_t *surf)
 	}
 }
 
+#if 0
 //see if any surfaces on the node are facing opposite directions
 //using plane normals. -rww
 static inline bool R_NodeHasOppositeFaces(mnode_t *node)
@@ -846,6 +845,7 @@ static inline bool R_NodeHasOppositeFaces(mnode_t *node)
 
 	return false;
 }
+#endif
 
 //recursively called for each node to go through the surfaces on that
 //node and generate the wireframe map. -rww
@@ -974,9 +974,9 @@ qboolean R_WriteWireframeMapToFile(void)
 	{ //nothing to do..?
 		return qfalse;
 	}
-	
 
-	f = ri.FS_FOpenFileWrite("blahblah.bla", false);
+
+	f = ri->FS_FOpenFileWrite("blahblah.bla", qtrue);
 	if (!f)
 	{ //can't create?
 		return qfalse;
@@ -1002,9 +1002,9 @@ qboolean R_WriteWireframeMapToFile(void)
 	}
 
 	//now write the buffer, and close
-	ri.FS_Write(rOut, requiredSize, f);
+	ri->FS_Write(rOut, requiredSize, f);
 	Z_Free(rOut);
-	ri.FS_FCloseFile(f);
+	ri->FS_FCloseFile(f);
 
 	return qtrue;
 }
@@ -1019,7 +1019,7 @@ qboolean R_GetWireframeMapFromFile(void)
 	int len;
 	int stepBytes;
 
-	len = ri.FS_FOpenFileRead("blahblah.bla", &f, qfalse);
+	len = ri->FS_FOpenFileRead("blahblah.bla", &f, qfalse);
 	if (!f || len <= 0)
 	{ //it doesn't exist
 		return qfalse;
@@ -1027,7 +1027,7 @@ qboolean R_GetWireframeMapFromFile(void)
 
 	surfs = (wireframeMapSurf_t *)Z_Malloc(len, TAG_ALL, qtrue);
 	rSurfs = surfs;
-	ri.FS_Read(surfs, len, f);
+	ri->FS_Read(surfs, len, f);
 
 	while (i < len)
 	{
@@ -1051,7 +1051,7 @@ qboolean R_GetWireframeMapFromFile(void)
 	//it should end up being equal, if not something was wrong with this file.
 	assert(i == len);
 
-	ri.FS_FCloseFile(f);
+	ri->FS_FCloseFile(f);
 	Z_Free(rSurfs);
 	return qtrue;
 }
@@ -1105,7 +1105,7 @@ qboolean R_InitializeWireframeAutomap(void)
 #endif
 
 //draw the automap with the given transformation matrix -rww
-#define QUADINFINITY			16777216 
+#define QUADINFINITY			16777216
 static float g_lastHeight = 0.0f;
 static bool g_lastHeightValid = false;
 static void R_RecursiveWorldNode( mnode_t *node, int planeBits, int dlightBits );
@@ -1354,7 +1354,6 @@ const void *R_DrawWireframeAutomap(const void *data)
 R_RecursiveWorldNode
 ================
 */
-#ifndef VV_LIGHTING
 static void R_RecursiveWorldNode( mnode_t *node, int planeBits, int dlightBits ) {
 
 	do
@@ -1435,11 +1434,11 @@ static void R_RecursiveWorldNode( mnode_t *node, int planeBits, int dlightBits )
 		// since we don't care about sort orders, just go positive to negative
 
 		// determine which dlights are needed
-		if ( r_nocull->integer!=2 ) 
+		if ( r_nocull->integer!=2 )
 		{
 			newDlights[0] = 0;
 			newDlights[1] = 0;
-			if ( dlightBits ) 
+			if ( dlightBits )
 			{
 				int	i;
 				for ( i = 0 ; i < tr.refdef.num_dlights ; i++ )
@@ -1450,7 +1449,7 @@ static void R_RecursiveWorldNode( mnode_t *node, int planeBits, int dlightBits )
 					if ( dlightBits & ( 1 << i ) ) {
 						dl = &tr.refdef.dlights[i];
 						dist = DotProduct( dl->origin, node->plane->normal ) - node->plane->dist;
-						
+
 						if ( dist > -dl->radius ) {
 							newDlights[0] |= ( 1 << i );
 						}
@@ -1516,8 +1515,6 @@ static void R_RecursiveWorldNode( mnode_t *node, int planeBits, int dlightBits )
 	}
 
 }
-#endif // VV_LIGHTING
-
 
 /*
 ===============
@@ -1528,7 +1525,7 @@ static mnode_t *R_PointInLeaf( const vec3_t p ) {
 	mnode_t		*node;
 	float		d;
 	cplane_t	*plane;
-	
+
 	if ( !tr.world ) {
 		Com_Error (ERR_DROP, "R_PointInLeaf: bad model");
 	}
@@ -1546,7 +1543,7 @@ static mnode_t *R_PointInLeaf( const vec3_t p ) {
 			node = node->children[1];
 		}
 	}
-	
+
 	return node;
 }
 
@@ -1571,23 +1568,18 @@ R_inPVS
 qboolean R_inPVS( const vec3_t p1, const vec3_t p2, byte *mask ) {
 	int		leafnum;
 	int		cluster;
-	int		area1, area2;
 
-	leafnum = ri.CM_PointLeafnum (p1);
-	cluster = ri.CM_LeafCluster (leafnum);
-	area1 = ri.CM_LeafArea (leafnum);
+	leafnum = ri->CM_PointLeafnum (p1);
+	cluster = ri->CM_LeafCluster (leafnum);
 
 	//agh, the damn snapshot mask doesn't work for this
-	mask = (byte *) ri.CM_ClusterPVS (cluster);
+	mask = (byte *) ri->CM_ClusterPVS (cluster);
 
-	leafnum = ri.CM_PointLeafnum (p2);
-	cluster = ri.CM_LeafCluster (leafnum);
-	area2 = ri.CM_LeafArea (leafnum);
+	leafnum = ri->CM_PointLeafnum (p2);
+	cluster = ri->CM_LeafCluster (leafnum);
 	if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
 		return qfalse;
-	//this doesn't freakin work
-//	if (!CM_AreasConnected (area1, area2))
-//		return qfalse;		// a door blocks sight
+
 	return qtrue;
 }
 
@@ -1618,8 +1610,8 @@ static void R_MarkLeaves (void) {
 	// if the cluster is the same and the area visibility matrix
 	// hasn't changed, we don't need to mark everything again
 
-	// if r_showcluster was just turned on, remark everything 
-	if ( tr.viewCluster == cluster && !tr.refdef.areamaskModified 
+	// if r_showcluster was just turned on, remark everything
+	if ( tr.viewCluster == cluster && !tr.refdef.areamaskModified
 		&& !r_showcluster->modified ) {
 		return;
 	}
@@ -1627,7 +1619,7 @@ static void R_MarkLeaves (void) {
 	if ( r_showcluster->modified || r_showcluster->integer ) {
 		r_showcluster->modified = qfalse;
 		if ( r_showcluster->integer ) {
-			Com_Printf ("cluster:%i  area:%i\n", cluster, leaf->area );
+			ri->Printf( PRINT_ALL, "cluster:%i  area:%i\n", cluster, leaf->area );
 		}
 	}
 
@@ -1644,7 +1636,7 @@ static void R_MarkLeaves (void) {
 	}
 
 	vis = R_ClusterPVS (tr.viewCluster);
-	
+
 	for (i=0,leaf=tr.world->nodes ; i<tr.world->numnodes ; i++, leaf++) {
 		cluster = leaf->cluster;
 		if ( cluster < 0 || cluster >= tr.world->numClusters ) {
@@ -1685,8 +1677,8 @@ void R_AddWorldSurfaces (void) {
 		return;
 	}
 
-	tr.currentEntityNum = TR_WORLDENT;
-	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_ENTITYNUM_SHIFT;
+	tr.currentEntityNum = REFENTITYNUM_WORLD;
+	tr.shiftedEntityNum = tr.currentEntityNum << QSORT_REFENTITYNUM_SHIFT;
 
 	// determine which leaves are in the PVS / areamask
 	R_MarkLeaves ();

@@ -1,5 +1,24 @@
-// Copyright (C) 2000-2002 Raven Software, Inc.
-//
+/*
+===========================================================================
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
 
 #define _STR(x) #x
 #define STR(x) _STR(x)
@@ -10,13 +29,13 @@
 #define VERSION_EXTERNAL_BUILD		3
 #define VERSION_INTERNAL_BUILD		0
 
-#define VERSION_STRING				STR(VERSION_MAJOR_RELEASE) ", " STR(VERSION_MINOR_RELEASE) ", " STR(VERSION_EXTERNAL_BUILD) ", " STR(VERSION_INTERNAL_BUILD) // "1, 0, 1, 0"
+#define VERSION_STRING STR(VERSION_MAJOR_RELEASE) ", " STR(VERSION_MINOR_RELEASE) ", " STR(VERSION_EXTERNAL_BUILD) ", " STR(VERSION_INTERNAL_BUILD) // "a, b, c, d"
 #define VERSION_STRING_DOTTED		STR(VERSION_MAJOR_RELEASE) "." STR(VERSION_MINOR_RELEASE) STR(VERSION_EXTERNAL_BUILD) // "1.03"
 
 #if defined(_DEBUG)
-	#define	JK_VERSION		"(debug)SOF2MP GOLD V"VERSION_STRING_DOTTED
+	#define	JK_VERSION		"(debug)SOF2MP GOLD V" VERSION_STRING_DOTTED
 #elif defined(FINAL_BUILD)
-	#define	JK_VERSION		"SOF2MP GOLD V"VERSION_STRING_DOTTED
+	#define	JK_VERSION		"SOF2MP GOLD V" VERSION_STRING_DOTTED
 #else
-	#define	JK_VERSION		"(internal)SOF2MP GOLD V"VERSION_STRING_DOTTED
+	#define	JK_VERSION		"(internal)SOF2MP GOLD V" VERSION_STRING_DOTTED
 #endif

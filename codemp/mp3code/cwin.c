@@ -1,7 +1,6 @@
-#pragma warning(disable:4206)	// nonstandard extension used : translation unit is empty
 #ifdef COMPILE_ME
 /*____________________________________________________________________________
-	
+
 	FreeAmp - The Free MP3 Player
 
         MP3 Decoder originally Copyright (C) 1995-1997 Xing Technology
@@ -22,7 +21,7 @@
 	You should have received a copy of the GNU General Public License
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-	
+
 	$Id: cwin.c,v 1.7 1999/10/19 07:13:08 elrod Exp $
 ____________________________________________________________________________*/
 
@@ -68,7 +67,7 @@ void window(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm++ = tmp;
+      *pcm++ = (short)tmp;
    }
 /*--  special case --*/
    sum = 0.0F;
@@ -82,7 +81,7 @@ void window(float *vbuf, int vb_ptr, short *pcm)
       tmp = 32767;
    else if (tmp < -32768)
       tmp = -32768;
-   *pcm++ = tmp;
+   *pcm++ = (short)tmp;
 /*-- last 15 --*/
    coef = wincoef + 255;	/* back pass through coefs */
    for (i = 0; i < 15; i++)
@@ -102,7 +101,7 @@ void window(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm++ = tmp;
+      *pcm++ = (short)tmp;
    }
 }
 
@@ -139,7 +138,7 @@ void window_dual(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm = tmp;
+      *pcm = (short)tmp;
       pcm += 2;
    }
 /*--  special case --*/
@@ -154,7 +153,7 @@ void window_dual(float *vbuf, int vb_ptr, short *pcm)
       tmp = 32767;
    else if (tmp < -32768)
       tmp = -32768;
-   *pcm = tmp;
+   *pcm = (short)tmp;
    pcm += 2;
 /*-- last 15 --*/
    coef = wincoef + 255;	/* back pass through coefs */
@@ -175,7 +174,7 @@ void window_dual(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm = tmp;
+      *pcm = (short)tmp;
       pcm += 2;
    }
 }
@@ -212,7 +211,7 @@ void window16(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm++ = tmp;
+      *pcm++ = (short)tmp;
    }
 /*--  special case --*/
    sum = 0.0F;
@@ -226,7 +225,7 @@ void window16(float *vbuf, int vb_ptr, short *pcm)
       tmp = 32767;
    else if (tmp < -32768)
       tmp = -32768;
-   *pcm++ = tmp;
+   *pcm++ = (short)tmp;
 /*-- last 7 --*/
    coef = wincoef + 255;	/* back pass through coefs */
    for (i = 0; i < 7; i++)
@@ -247,7 +246,7 @@ void window16(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm++ = tmp;
+      *pcm++ = (short)tmp;
    }
 }
 /*--------------- 16 pt dual window (interleaved output) -----------------*/
@@ -282,7 +281,7 @@ void window16_dual(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm = tmp;
+      *pcm = (short)tmp;
       pcm += 2;
    }
 /*--  special case --*/
@@ -297,7 +296,7 @@ void window16_dual(float *vbuf, int vb_ptr, short *pcm)
       tmp = 32767;
    else if (tmp < -32768)
       tmp = -32768;
-   *pcm = tmp;
+   *pcm = (short)tmp;
    pcm += 2;
 /*-- last 7 --*/
    coef = wincoef + 255;	/* back pass through coefs */
@@ -319,7 +318,7 @@ void window16_dual(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm = tmp;
+      *pcm = (short)tmp;
       pcm += 2;
    }
 }
@@ -355,7 +354,7 @@ void window8(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm++ = tmp;
+      *pcm++ = (short)tmp;
    }
 /*--  special case --*/
    sum = 0.0F;
@@ -369,7 +368,7 @@ void window8(float *vbuf, int vb_ptr, short *pcm)
       tmp = 32767;
    else if (tmp < -32768)
       tmp = -32768;
-   *pcm++ = tmp;
+   *pcm++ = (short)tmp;
 /*-- last 3 --*/
    coef = wincoef + 255;	/* back pass through coefs */
    for (i = 0; i < 3; i++)
@@ -390,7 +389,7 @@ void window8(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm++ = tmp;
+      *pcm++ = (short)tmp;
    }
 }
 /*--------------- 8 pt dual window (interleaved output) -----------------*/
@@ -425,7 +424,7 @@ void window8_dual(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm = tmp;
+      *pcm = (short)tmp;
       pcm += 2;
    }
 /*--  special case --*/
@@ -440,7 +439,7 @@ void window8_dual(float *vbuf, int vb_ptr, short *pcm)
       tmp = 32767;
    else if (tmp < -32768)
       tmp = -32768;
-   *pcm = tmp;
+   *pcm = (short)tmp;
    pcm += 2;
 /*-- last 3 --*/
    coef = wincoef + 255;	/* back pass through coefs */
@@ -462,7 +461,7 @@ void window8_dual(float *vbuf, int vb_ptr, short *pcm)
 	 tmp = 32767;
       else if (tmp < -32768)
 	 tmp = -32768;
-      *pcm = tmp;
+      *pcm = (short)tmp;
       pcm += 2;
    }
 }

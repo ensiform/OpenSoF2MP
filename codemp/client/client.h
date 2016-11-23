@@ -1,24 +1,50 @@
-// client.h -- primary header for client
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
 #pragma once
-#if !defined(CLIENT_H_INC)
-#define CLIENT_H_INC
+
+// client.h -- primary header for client
 
 #include "qcommon/q_shared.h"
 #include "qcommon/qcommon.h"
-#include "ui/ui_public.h"
-#include "renderer/tr_public.h"
+#include "rd-common/tr_public.h"
 #include "keys.h"
 #include "snd_public.h"
-#include "cgame/cg_public.h"
 #include "game/bg_public.h"
+#include "cgame/cg_public.h"
+#include "ui/ui_public.h"
 
 #define	RETRANSMIT_TIMEOUT	3000	// time between connection packet retransmits
+
+// file full of random crap that gets used to create ja_guid
+#define QKEY_FILE "jakey"
+#define QKEY_SIZE 2048
 
 // Wind
 extern vec3_t cl_windVec;
 
 // snapshots are a view of the server at a given time
-typedef struct {
+typedef struct clSnapshot_s {
 	qboolean		valid;			// cleared if delta parsing was invalid
 	int				snapFlags;		// rate delayed and dropped commands
 
@@ -50,7 +76,7 @@ new gamestate_t, potentially several times during an established connection
 =============================================================================
 */
 
-typedef struct {
+typedef struct outPacket_s {
 	int		p_cmdNumber;		// cl.cmdNumber when packet was sent
 	int		p_serverTime;		// usercmd->serverTime when packet was sent
 	int		p_realtime;			// cls.realtime when packet was sent
@@ -58,12 +84,12 @@ typedef struct {
 
 // the parseEntities array must be large enough to hold PACKET_BACKUP frames of
 // entities, so that when a delta compressed message arives from the server
-// it can be un-deltad from the original 
-#define	MAX_PARSE_ENTITIES 2048
+// it can be un-deltad from the original
+#define	MAX_PARSE_ENTITIES	( PACKET_BACKUP * MAX_SNAPSHOT_ENTITIES )
 
 extern int g_console_field_width;
 
-typedef struct {
+typedef struct clientActive_s {
 	int			timeoutcount;		// it requres several frames in a timeout condition
 									// to disconnect, preventing debugging breaks from
 									// causing immediate disconnects on continue
@@ -128,7 +154,7 @@ extern	clientActive_t		cl;
 
 #define MAX_HEIGHTMAP_SIZE	16000
 
-typedef struct 
+typedef struct
 {
 	int			mType;
 	int			mSide;
@@ -151,7 +177,7 @@ demo through a file.
 */
 
 
-typedef struct {
+typedef struct clientConnection_s {
 
 	int			clientNum;
 	int			lastPacketSentTime;			// for retransmits during connection
@@ -207,16 +233,11 @@ typedef struct {
 	int			timeDemoStart;		// cls.realtime before first frame
 	int			timeDemoBaseTime;	// each frame will be at this time + frameNum * 50
 
+	float		aviVideoFrameRemainder;
+	float		aviSoundFrameRemainder;
+
 	// big stuff at end of structure so most offsets are 15 bits or less
 	netchan_t	netchan;
-
-	//rwwRMG - added:
-	int					rmgSeed;
-	int					rmgHeightMapSize;
-	unsigned char		rmgHeightMap[MAX_HEIGHTMAP_SIZE];
-	unsigned char		rmgFlattenMap[MAX_HEIGHTMAP_SIZE];
-	rmAutomapSymbol_t	rmgAutomapSymbols[MAX_AUTOMAP_SYMBOLS];
-	int					rmgAutomapSymbolCount;
 } clientConnection_t;
 
 extern	clientConnection_t clc;
@@ -230,14 +251,14 @@ no client connection is active at all
 ==================================================================
 */
 
-typedef struct {
+typedef struct ping_s {
 	netadr_t	adr;
 	int			start;
 	int			time;
 	char		info[MAX_INFO_STRING];
 } ping_t;
 
-typedef struct {
+typedef struct serverInfo_s {
 	netadr_t	adr;
 	char	  	hostName[MAX_NAME_LENGTH];
 	char	  	mapName[MAX_NAME_LENGTH];
@@ -250,19 +271,12 @@ typedef struct {
 	int			maxPing;
 	int			ping;
 	qboolean	visible;
-	int			allowAnonymous;
 	qboolean	needPassword;
-//	qboolean	pure;
+	int			humans, bots;
 } serverInfo_t;
 
-typedef struct {
-	byte	ip[4];
-	unsigned short	port;
-} serverAddress_t;
-
-typedef struct {
+typedef struct clientStatic_s {
 	connstate_t	state;				// connection status
-	int			keyCatchers;		// bit flags
 
 	char		servername[MAX_OSPATH];		// name of server from original connect (used by reconnect)
 
@@ -286,14 +300,11 @@ typedef struct {
 	serverInfo_t  globalServers[MAX_GLOBAL_SERVERS];
 	// additional global servers
 	int			numGlobalServerAddresses;
-	serverAddress_t		globalServerAddresses[MAX_GLOBAL_SERVERS];
+	netadr_t		globalServerAddresses[MAX_GLOBAL_SERVERS];
 
 	int			numfavoriteservers;
 	serverInfo_t	favoriteServers[MAX_OTHER_SERVERS];
-
 	int pingUpdateSource;		// source currently pinging or updating
-
-	int masterNum;
 
 	// update server info
 	netadr_t	updateServer;
@@ -312,7 +323,7 @@ typedef struct {
 #define	CON_TEXTSIZE	0x30000 //was 32768
 #define	NUM_CON_TIMES	4
 
-typedef struct {
+typedef struct console_s {
 	qboolean	initialized;
 
 	short	text[CON_TEXTSIZE];
@@ -338,11 +349,7 @@ typedef struct {
 
 extern	clientStatic_t		cls;
 
-//=============================================================================
-
-extern	vm_t			*cgvm;	// interface to cgame dll or vm
-extern	vm_t			*uivm;	// interface to ui dll or vm
-extern	refexport_t		re;		// interface to refresh .dll
+extern	refexport_t		*re;		// interface to refresh .dll
 
 //
 // cvars
@@ -368,6 +375,8 @@ extern	cvar_t	*cl_sensitivity;
 extern	cvar_t	*cl_freelook;
 
 extern	cvar_t	*cl_mouseAccel;
+extern	cvar_t	*cl_mouseAccelOffset;
+extern	cvar_t	*cl_mouseAccelStyle;
 extern	cvar_t	*cl_showMouseRate;
 
 extern	cvar_t	*m_pitch;
@@ -379,6 +388,9 @@ extern	cvar_t	*m_filter;
 extern	cvar_t	*cl_timedemo;
 extern	cvar_t	*cl_aviFrameRate;
 extern	cvar_t	*cl_aviMotionJpeg;
+extern	cvar_t	*cl_avi2GBLimit;
+
+extern	cvar_t	*cl_forceavidemo;
 
 extern	cvar_t	*cl_activeAction;
 
@@ -386,6 +398,11 @@ extern	cvar_t	*cl_allowDownload;
 extern	cvar_t	*cl_allowAltEnter;
 extern	cvar_t	*cl_conXOffset;
 extern	cvar_t	*cl_inGameVideo;
+
+extern	cvar_t	*cl_consoleKeys;
+extern	cvar_t	*cl_consoleUseScanCode;
+
+extern  cvar_t  *cl_lanForcePackets;
 
 //=================================================
 
@@ -396,9 +413,15 @@ extern	cvar_t	*cl_inGameVideo;
 void CL_Init (void);
 void CL_FlushMemory(void);
 void CL_ShutdownAll( qboolean shutdownRef );
-void CL_AddReliableCommand( const char *cmd );
+void CL_AddReliableCommand( const char *cmd, qboolean isDisconnectCmd );
 
 void CL_StartHunkUsers( void );
+
+qboolean CL_GetSnapshot( int snapshotNumber, snapshot_t *snapshot );
+qboolean CL_GetDefaultState( int index, entityState_t *state );
+qboolean CL_GetServerCommand( int serverCommandNumber );
+qboolean CL_GetUserCmd( int cmdNumber, usercmd_t *ucmd );
+void CL_SetUserCmdValue( int userCmdValue, float sensitivityScale );
 
 void CL_Disconnect_f (void);
 void CL_GetChallengePacket (void);
@@ -416,17 +439,16 @@ void CL_GetPingInfo( int n, char *buf, int buflen );
 void CL_ClearPing( int n );
 int CL_GetPingQueueCount( void );
 
-void CL_ShutdownRef( void );
 void CL_InitRef( void );
 
-int CL_ServerStatus( char *serverAddress, char *serverStatusString, int maxLen );
+int CL_ServerStatus( const char *serverAddress, char *serverStatusString, int maxLen );
 
 qboolean CL_CheckPaused(void);
 
 //
 // cl_input
 //
-typedef struct {
+typedef struct kbutton_s {
 	int			down[2];		// key nums holding it down
 	unsigned	downtime;		// msec timestamp
 	unsigned	msec;			// msec down this frame if both a down and up happened
@@ -434,19 +456,12 @@ typedef struct {
 	qboolean	wasPressed;		// set when down, not cleared when up
 } kbutton_t;
 
-extern	kbutton_t	in_mlook, in_klook;
-extern 	kbutton_t 	in_strafe;
-extern 	kbutton_t 	in_speed;
-
 void CL_InitInput (void);
+void CL_ShutdownInput(void);
 void CL_SendCmd (void);
 void CL_ClearState (void);
-void CL_ReadPackets (void);
 
 void CL_WritePacket( void );
-void IN_CenterView (void);
-
-void CL_VerifyCode( void );
 
 float CL_KeyState (kbutton_t *key);
 const char *Key_KeynumToString( int keynum/*, qboolean bTranslate */ ); //note: translate is only called for menu display not configs
@@ -456,13 +471,9 @@ const char *Key_KeynumToString( int keynum/*, qboolean bTranslate */ ); //note: 
 //
 extern int cl_connectedToPureServer;
 extern int cl_connectedToCheatServer;
-extern int cl_connectedGAME;
-extern int cl_connectedCGAME;
-extern int cl_connectedUI;
 
 void CL_SystemInfoChanged( void );
 void CL_ParseServerMessage( msg_t *msg );
-//void CL_SP_Print(const word ID, byte *Data);
 
 //====================================================================
 
@@ -477,10 +488,10 @@ qboolean CL_UpdateVisiblePings_f( int source );
 //
 // console
 //
-void Con_DrawCharacter (int cx, int line, int num);
 
 void Con_CheckResize (void);
 void Con_Init (void);
+void Con_Shutdown(void);
 void Con_Clear_f (void);
 void Con_ToggleConsole_f (void);
 void Con_DrawNotify (void);
@@ -502,14 +513,16 @@ void	SCR_UpdateScreen (void);
 
 void	SCR_DebugGraph (float value, int color);
 
-void	SCR_FillRect( float x, float y, float width, float height, 
+int		SCR_GetBigStringWidth( const char *str );	// returns in virtual 640x480 coordinates
+
+void	SCR_FillRect( float x, float y, float width, float height,
 					 const float *color );
 void	SCR_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
 void	SCR_DrawNamedPic( float x, float y, float width, float height, const char *picname );
 
-void	SCR_DrawBigString( int x, int y, const char *s, float alpha );			// draws a string with embedded color control characters with fade
-void	SCR_DrawBigStringColor( int x, int y, const char *s, vec4_t color );	// ignores embedded color control characters
-void	SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, qboolean forceColor );
+void	SCR_DrawBigString( int x, int y, const char *s, float alpha, qboolean noColorEscape );			// draws a string with embedded color control characters with fade
+void	SCR_DrawBigStringColor( int x, int y, const char *s, vec4_t color, qboolean noColorEscape );	// ignores embedded color control characters
+void	SCR_DrawSmallStringExt( int x, int y, const char *string, float *setColor, qboolean forceColor, qboolean noColorEscape );
 void	SCR_DrawSmallChar( int x, int y, int ch );
 
 
@@ -529,8 +542,6 @@ void CIN_SetExtents (int handle, int x, int y, int w, int h);
 void CIN_SetLooping (int handle, qboolean loop);
 void CIN_UploadCinematic(int handle);
 void CIN_CloseAllVideos(void);
-
-void CL_UpdateHotSwap(void);
 
 //
 // cl_cgame.c
@@ -570,4 +581,3 @@ void CL_WriteAVIVideoFrame( const byte *imageBuffer, int size );
 void CL_WriteAVIAudioFrame( const byte *pcmBuffer, int size );
 qboolean CL_CloseAVI( void );
 qboolean CL_VideoRecording( void );
-#endif

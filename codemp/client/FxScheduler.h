@@ -1,24 +1,35 @@
+/*
+===========================================================================
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
 
-#if !defined(FX_UTIL_H_INC)
-	#include "FxUtil.h"
-#endif
+This file is part of the OpenJK source code.
 
-#if !defined(GENERICPARSER2_H_INC)
-	#include "qcommon/GenericParser2.h"
-#endif
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
 
-#ifndef FX_SCHEDULER_H_INC
-#define FX_SCHEDULER_H_INC
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-#pragma warning (push, 3)	//go back down to 3 for the stl include
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
+#pragma once
+
+#include "FxUtil.h"
+#include "qcommon/GenericParser2.h"
+
+#include <algorithm>
 #include <vector>
 #include <map>
 #include <list>
 #include <string>
-#pragma warning (pop)
-
-using namespace std;
-
 
 #define FX_FILE_PATH	"effects"
 
@@ -27,19 +38,19 @@ using namespace std;
 #define FX_MAX_2DEFFECTS			64		// how many 2d effects the system can store
 #define FX_MAX_EFFECT_COMPONENTS	24		// how many primitives an effect can hold, this should be plenty
 #define FX_MAX_PRIM_NAME			32
-	
+
 //-----------------------------------------------
 // These are spawn flags for primitiveTemplates
 //-----------------------------------------------
 
 #define FX_ORG_ON_SPHERE		0x00001	// Pretty dang expensive, calculates a point on a sphere/ellipsoid
-#define FX_AXIS_FROM_SPHERE		0x00002	// Can be used in conjunction with org_on_sphere to cause particles to move out 
+#define FX_AXIS_FROM_SPHERE		0x00002	// Can be used in conjunction with org_on_sphere to cause particles to move out
 										//	from the center of the sphere
 #define FX_ORG_ON_CYLINDER		0x00004	// calculate point on cylinder/disk
 
 #define FX_ORG2_FROM_TRACE		0x00010
 #define FX_TRACE_IMPACT_FX		0x00020	// if trace impacts, we should play one of the specified impact fx files
-#define FX_ORG2_IS_OFFSET		0x00040	// template specified org2 should be the offset from a trace endpos or 
+#define FX_ORG2_IS_OFFSET		0x00040	// template specified org2 should be the offset from a trace endpos or
 										//	passed in org2. You might use this to lend a random flair to the endpos.
 										//	Note: this is done pre-trace, so you may have to specify large numbers for this
 
@@ -59,7 +70,7 @@ using namespace std;
 //
 // CMediaHandles
 //
-// Primitive templates might want to use a list of sounds, shaders 
+// Primitive templates might want to use a list of sounds, shaders
 //	or models to get a bit more variation in their effects.
 //
 //-----------------------------------------------------------------
@@ -67,15 +78,15 @@ class CMediaHandles
 {
 private:
 
-	vector<int>	mMediaList;
+	std::vector<int>	mMediaList;
 
 public:
 
 	void	AddHandle( int item )	{ mMediaList.push_back( item );	}
 	int		GetHandle()				{ if (mMediaList.size()==0) {return 0;}
-										else {return mMediaList[irand(0,mMediaList.size()-1)];} }
+										else {return mMediaList[irand(0,(int)mMediaList.size()-1)];} }
 
-	void operator=(const CMediaHandles &that );
+	CMediaHandles &operator=(const CMediaHandles &that );
 };
 
 
@@ -84,7 +95,7 @@ public:
 // CFxRange
 //
 // Primitive templates typically use this class to define each of
-//	its members.  This is done to make it easier to create effects 
+//	its members.  This is done to make it easier to create effects
 //	with a desired range of characteristics.
 //
 //-----------------------------------------------------------------
@@ -140,11 +151,11 @@ enum EPrimType
 //
 // CPrimitiveTemplate
 //
-// The primitive template is used to spawn 1 or more fx primitives 
+// The primitive template is used to spawn 1 or more fx primitives
 //	with the range of characteristics defined by the template.
 //
-// As such, I just made this one huge shared class knowing that 
-//	there won't be many of them in memory at once, 	and we won't 
+// As such, I just made this one huge shared class knowing that
+//	there won't be many of them in memory at once, 	and we won't
 //	be dynamically creating and deleting them mid-game.  Also,
 //	note that not every primitive type will use all of these fields.
 //
@@ -156,8 +167,8 @@ public:
 
 	// These kinds of things should not even be allowed to be accessed publicly
 	bool			mCopy;
-	int				mRefCount;		// For a copy of a primitive...when we figure out how many items we want to spawn, 
-									//	we'll store that here and then decrement us for each we actually spawn.  When we 
+	int				mRefCount;		// For a copy of a primitive...when we figure out how many items we want to spawn,
+									//	we'll store that here and then decrement us for each we actually spawn.  When we
 									//	hit zero, we are no longer used and so we can just free ourselves
 
 	char			mName[FX_MAX_PRIM_NAME];
@@ -336,7 +347,7 @@ public:
 
 	bool ParsePrimitive( CGPGroup *grp );
 
-	void operator=(const CPrimitiveTemplate &that);
+	CPrimitiveTemplate &operator=(const CPrimitiveTemplate &that);
 };
 
 // forward declaration
@@ -350,23 +361,196 @@ struct SEffectTemplate
 	char	mEffectName[MAX_QPATH];					// is this extraneous??
 	int		mPrimitiveCount;
 	int		mRepeatDelay;
-	CPrimitiveTemplate	*mPrimitives[FX_MAX_EFFECT_COMPONENTS];	 
+	CPrimitiveTemplate	*mPrimitives[FX_MAX_EFFECT_COMPONENTS];
 
-	bool operator == (const char * name) const 
+	bool operator == (const char * name) const
 	{
-		return !stricmp( mEffectName, name );
+		return !Q_stricmp( mEffectName, name );
 	}
-	void operator=(const SEffectTemplate &that);
+	SEffectTemplate &operator=(const SEffectTemplate &that);
 };
 
+template<typename T, int N>
+class PoolAllocator
+{
+public:
+	PoolAllocator()
+		: pool (new T[N])
+		, freeAndAllocated (new int[N])
+		, numFree (N)
+		, highWatermark (0)
+	{
+		for ( int i = 0; i < N; i++ )
+		{
+			freeAndAllocated[i] = i;
+		}
+	}
 
+	T *Alloc()
+	{
+		if ( numFree == 0 )
+		{
+			return NULL;
+		}
+
+		T *ptr = new (&pool[freeAndAllocated[0]]) T;
+
+		std::rotate (freeAndAllocated, freeAndAllocated + 1, freeAndAllocated + N);
+		numFree--;
+
+		highWatermark = Q_max(highWatermark, N - numFree);
+
+		return ptr;
+	}
+
+	void TransferTo ( PoolAllocator<T, N>& allocator )
+	{
+		allocator.freeAndAllocated = freeAndAllocated;
+		allocator.highWatermark = highWatermark;
+		allocator.numFree = numFree;
+		allocator.pool = pool;
+
+		highWatermark = 0;
+		numFree = N;
+		freeAndAllocated = NULL;
+		pool = NULL;
+	}
+
+	bool OwnsPtr ( const T *ptr ) const
+	{
+		return ptr >= pool && ptr < (pool + N);
+	}
+
+	void Free ( T *ptr )
+	{
+		for ( int i = numFree; i < N; i++ )
+		{
+			T *p = &pool[freeAndAllocated[i]];
+
+			if ( p == ptr )
+			{
+				if ( i > numFree )
+				{
+					std::rotate (freeAndAllocated + numFree, freeAndAllocated + i, freeAndAllocated + i + 1);
+				}
+
+				p->~T();
+				numFree++;
+
+				break;
+			}
+		}
+	}
+
+	int GetHighWatermark() const { return highWatermark; }
+
+	~PoolAllocator()
+	{
+		for ( int i = numFree; i < N; i++ )
+		{
+			T *p = &pool[freeAndAllocated[i]];
+
+			p->~T();
+		}
+
+		delete [] freeAndAllocated;
+		delete [] pool;
+	}
+
+private:
+	PoolAllocator ( const PoolAllocator<T, N>& );
+	PoolAllocator& operator = ( const PoolAllocator<T, N>& );
+
+	T *pool;
+
+	// The first 'numFree' elements are the indexes of the free slots.
+	// The remaining elements are the indexes of the allocated slots.
+	int *freeAndAllocated;
+	int numFree;
+
+	int highWatermark;
+};
+
+template<typename T, int N>
+class PagedPoolAllocator
+{
+	public:
+		PagedPoolAllocator ()
+			: numPages (1)
+			, pages (new PoolAllocator<T, N>[1]())
+		{
+		}
+
+		T *Alloc ()
+		{
+			T *ptr = NULL;
+			for ( int i = 0; i < numPages && ptr == NULL; i++ )
+			{
+				ptr = pages[i].Alloc ();
+			}
+
+			if ( ptr == NULL )
+			{
+				PoolAllocator<T, N> *newPages = new PoolAllocator<T, N>[numPages + 1] ();
+				for ( int i = 0; i < numPages; i++ )
+				{
+					pages[i].TransferTo (newPages[i]);
+				}
+
+				delete[] pages;
+				pages = newPages;
+
+				ptr = pages[numPages].Alloc ();
+				if ( ptr == NULL )
+				{
+					return NULL;
+				}
+
+				numPages++;
+			}
+
+			return ptr;
+		}
+
+		void Free ( T *ptr )
+		{
+			for ( int i = 0; i < numPages; i++ )
+			{
+				if ( pages[i].OwnsPtr (ptr) )
+				{
+					pages[i].Free (ptr);
+					break;
+				}
+			}
+		}
+
+		int GetHighWatermark () const
+		{
+			int total = 0;
+			for ( int i = 0; i < numPages; i++ )
+			{
+				total += pages[i].GetHighWatermark ();
+			}
+
+			return total;
+		}
+
+		~PagedPoolAllocator ()
+		{
+			delete[] pages;
+		}
+
+	private:
+		int numPages;
+		PoolAllocator<T, N> *pages;
+};
 
 //-----------------------------------------------------------------
 //
 // CFxScheduler
 //
-// The scheduler not only handles requests to play an effect, it 
-//	tracks the request throughout its life if necessary, creating 
+// The scheduler not only handles requests to play an effect, it
+//	tracks the request throughout its life if necessary, creating
 //	any of the delayed components as needed.
 //
 //-----------------------------------------------------------------
@@ -384,14 +568,9 @@ private:
 		short	mEntNum;		// used to determine which entity this ghoul model is attached to.
 		bool	mPortalEffect;	// rww - render this before skyportals, and not in the normal world view.
 		bool	mIsRelative;	// bolt this puppy on keep it updated
-		int		iGhoul2;
+		CGhoul2Info_v *ghoul2;
 		vec3_t	mOrigin;
-		vec3_t	mAxis[3];
-
-		bool operator <= (const int time) const 
-		{
-			return mStartTime <= time;
-		}
+		matrix3_t	mAxis;
 	};
 
 /* Looped Effects get stored and reschedule at mRepeatRate */
@@ -401,7 +580,7 @@ private:
 	{
 		int		mId;			// effect id
 		int		mBoltInfo;		// used to determine which bolt on the ghoul2 model we should be attaching this effect to
-		CGhoul2Info_v mGhoul2;
+		CGhoul2Info_v *mGhoul2;
 		int		mNextTime;		//time to render again
 		int		mLoopStopTime;	//time to die
 		bool	mPortalEffect;	// rww - render this before skyportals, and not in the normal world view.
@@ -410,7 +589,7 @@ private:
 
 	SLoopedEffect	mLoopedEffectArray[MAX_LOOPED_FX];
 
-	int		ScheduleLoopedEffect( int id, int boltInfo, int iGhoul2, bool isPortal, int iLoopTime, bool isRelative );
+	int		ScheduleLoopedEffect( int id, int boltInfo, CGhoul2Info_v *ghoul2, bool isPortal, int iLoopTime, bool isRelative );
 	void	AddLoopedEffects( );
 
 
@@ -435,9 +614,9 @@ private:
 	};
 
 	// this makes looking up the index based on the string name much easier
-	typedef map<string, int>				TEffectID;
+	typedef std::map<std::string, int>				TEffectID;
 
-	typedef list<SScheduledEffect*>			TScheduledEffect;
+	typedef std::list<SScheduledEffect*>			TScheduledEffect;
 
 	// Effects
 	SEffectTemplate		mEffectTemplates[FX_MAX_EFFECTS];
@@ -450,6 +629,7 @@ private:
 	// List of scheduled effects that will need to be created at the correct time.
 	TScheduledEffect	mFxSchedule;
 
+	PagedPoolAllocator<SScheduledEffect, 1024> mScheduledEffectsPool;
 
 	// Private function prototypes
 	SEffectTemplate *GetNewEffectTemplate( int *id, const char *file );
@@ -457,35 +637,36 @@ private:
 	void	AddPrimitiveToEffect( SEffectTemplate *fx, CPrimitiveTemplate *prim );
 	int		ParseEffect( const char *file, CGPGroup *base );
 
-	void	CreateEffect( CPrimitiveTemplate *fx, const vec3_t origin, vec3_t axis[3], int lateTime, int fxParm = -1,  int iGhoul2 = 0, int entNum = -1, int modelNum = -1, int boltNum = -1);
+	void	CreateEffect( CPrimitiveTemplate *fx, const vec3_t origin, matrix3_t axis, int lateTime, int fxParm = -1,  CGhoul2Info_v *ghoul2 = NULL, int entNum = -1, int modelNum = -1, int boltNum = -1);
 	void	CreateEffect( CPrimitiveTemplate *fx, SScheduledEffect *schedFx );
 
 public:
 
 	CFxScheduler();
-	
+
 	int		RegisterEffect( const char *file, bool bHasCorrectPath = false );	// handles pre-caching
 
 	// Nasty overloaded madness
 	//rww - maybe this should be done differently.. it's more than a bit confusing.
 	//Remind me when I don't have 50 files checked out.
 	void	PlayEffect( int id, vec3_t org, vec3_t fwd, int vol = -1, int rad = -1, bool isPortal = false );				// builds arbitrary perp. right vector, does a cross product to define up
-	void	PlayEffect( int id, vec3_t origin, vec3_t axis[3], const int boltInfo=-1, int iGhoul2 = 0,
+	void	PlayEffect( int id, vec3_t origin, matrix3_t axis, const int boltInfo=-1, CGhoul2Info_v *ghoul2 = NULL,
 				int fxParm = -1, int vol = -1, int rad = -1, bool isPortal = false, int iLoopTime = false, bool isRelative = false  );
 	void	PlayEffect( const char *file, vec3_t org, int vol = -1, int rad = -1 );					// uses a default up axis
 	void	PlayEffect( const char *file, vec3_t org, vec3_t fwd, int vol = -1, int rad = -1 );		// builds arbitrary perp. right vector, does a cross product to define up
-	void	PlayEffect( const char *file, vec3_t origin, 
-				vec3_t axis[3], const int boltInfo = -1, int iGhoul2 = 0, int fxParm = -1, int vol = -1, int rad = -1, int iLoopTime = false, bool isRelative = false );
+	void	PlayEffect( const char *file, vec3_t origin,
+				matrix3_t axis, const int boltInfo = -1, CGhoul2Info_v *ghoul2 = NULL, int fxParm = -1, int vol = -1, int rad = -1, int iLoopTime = false, bool isRelative = false );
 
 	void	StopEffect( const char *file, const int boltInfo, bool isPortal = false );	//find a scheduled Looping effect with these parms and kill it
 	void	AddScheduledEffects( bool portal );								// call once per CGame frame
 
 	// kef -- called for a 2D effect instead of addRefToScene
 	bool	Add2DEffect(float x, float y, float w, float h, vec4_t color, qhandle_t shaderHandle);
-	// kef -- called once per cgame frame AFTER cgi.RenderScene
+	// kef -- called once per cgame frame AFTER trap->RenderScene
 	void	Draw2DEffects(float screenXScale, float screenYScale);
 
-	int		NumScheduledFx()	{ return mFxSchedule.size();	}
+	int		GetHighWatermark() const { return mScheduledEffectsPool.GetHighWatermark(); }
+	int		NumScheduledFx()	{ return (int)mFxSchedule.size();	}
 	void	Clean(bool bRemoveTemplates = true, int idToPreserve = 0);	// clean out the system
 
 	// FX Override functions
@@ -501,5 +682,3 @@ public:
 // The one and only
 //-------------------
 extern CFxScheduler theFxScheduler;
-
-#endif // FX_SCHEDULER_H_INC

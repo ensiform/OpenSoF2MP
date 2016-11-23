@@ -1,10 +1,28 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
+/*
+===========================================================================
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
 
 // tr_QuickSprite.cpp: implementation of the CQuickSpriteSystem class.
 //
 //////////////////////////////////////////////////////////////////////
-//#include "server/exe_headers.h"
 #include "tr_local.h"
 
 #include "tr_quicksprite.h"
@@ -22,9 +40,18 @@ CQuickSpriteSystem SQuickSprite;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CQuickSpriteSystem::CQuickSpriteSystem()
+CQuickSpriteSystem::CQuickSpriteSystem() :
+	mTexBundle(NULL),
+	mGLStateBits(0),
+	mFogIndex(-1),
+	mUseFog(qfalse),
+	mNextVert(0)
 {
 	int i;
+
+	memset( mVerts, 0, sizeof( mVerts ) );
+	memset( mFogTextureCoords, 0, sizeof( mFogTextureCoords ) );
+	memset( mColors, 0, sizeof( mColors ) );
 
 	for (i=0; i<SHADER_MAX_VERTEXES; i+=4)
 	{
@@ -127,10 +154,10 @@ void CQuickSpriteSystem::Flush(void)
 		backEnd.pc.c_totalIndexes += mNextVert;
 	}
 
-	// 
+	//
 	// unlock arrays
 	//
-	if (qglUnlockArraysEXT) 
+	if (qglUnlockArraysEXT)
 	{
 		qglUnlockArraysEXT();
 		GLimp_LogComment( "glUnlockArraysEXT\n" );
@@ -140,7 +167,7 @@ void CQuickSpriteSystem::Flush(void)
 }
 
 
-void CQuickSpriteSystem::StartGroup(textureBundle_t *bundle, unsigned long glbits, int fogIndex )
+void CQuickSpriteSystem::StartGroup(textureBundle_t *bundle, uint32_t glbits, int fogIndex )
 {
 	mNextVert = 0;
 
@@ -175,7 +202,7 @@ void CQuickSpriteSystem::Add(float *pointdata, color4ub_t color, vec2_t fog)
 {
 	float *curcoord;
 	float *curfogtexcoord;
-	unsigned long *curcolor;
+	uint32_t *curcolor;
 
 	if (mNextVert>SHADER_MAX_VERTEXES-4)
 	{
@@ -183,14 +210,15 @@ void CQuickSpriteSystem::Add(float *pointdata, color4ub_t color, vec2_t fog)
 	}
 
 	curcoord = mVerts[mNextVert];
-	memcpy(curcoord, pointdata, 4*sizeof(vec4_t));
+	// This is 16*sizeof(float) because, pointdata comes from a float[16]
+	memcpy(curcoord, pointdata, 16*sizeof(float));
 
 	// Set up color
 	curcolor = &mColors[mNextVert];
-	*curcolor++ = *(unsigned long *)color;
-	*curcolor++ = *(unsigned long *)color;
-	*curcolor++ = *(unsigned long *)color;
-	*curcolor++ = *(unsigned long *)color;
+	*curcolor++ = *(uint32_t *)color;
+	*curcolor++ = *(uint32_t *)color;
+	*curcolor++ = *(uint32_t *)color;
+	*curcolor++ = *(uint32_t *)color;
 
 	if (fog)
 	{

@@ -1,5 +1,5 @@
 /*____________________________________________________________________________
-	
+
 	FreeAmp - The Free MP3 Player
 
         MP3 Decoder originally Copyright (C) 1996-1997 Xing Technology
@@ -20,7 +20,7 @@
 	You should have received a copy of the GNU General Public License
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-	
+
 	$Id: L3.h,v 1.7 1999/12/10 07:16:42 elrod Exp $
 ____________________________________________________________________________*/
 
@@ -37,36 +37,15 @@ ____________________________________________________________________________*/
 
 #include "config.h"
 
+#include "qcommon/q_platform.h"
+
 #define GLOBAL_GAIN_SCALE (4*15)
 /* #define GLOBAL_GAIN_SCALE 0 */
-
-
-#ifdef _M_IX86
-#define LITTLE_ENDIAN 1
-#endif
-
-#ifdef _M_ALPHA
-#define LITTLE_ENDIAN 1
-#endif
-
-#ifdef sparc
-#define LITTLE_ENDIAN 0
-#endif
-
-#if defined(__POWERPC__)
-#define LITTLE_ENDIAN 0
-#elif defined(__INTEL__)
-#define LITTLE_ENDIAN 1
-#endif
-
-#ifndef LITTLE_ENDIAN
-#error Layer III LITTLE_ENDIAN must be defined 0 or 1
-#endif
 
 /*-----------------------------------------------------------*/
 /*---- huffman lookup tables ---*/
 /* endian dependent !!! */
-#if LITTLE_ENDIAN
+#ifdef Q3_LITTLE_ENDIAN
 typedef union
 {
    int ptr;

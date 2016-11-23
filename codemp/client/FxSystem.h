@@ -1,50 +1,38 @@
+/*
+===========================================================================
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
 
-#ifndef FX_SYSTEM_H_INC
-#define FX_SYSTEM_H_INC
+This file is part of the OpenJK source code.
 
-#if !defined(G2_H_INC)
-	#include "ghoul2/G2.h"
-#endif
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
+#pragma once
+
+#include "client/cl_cgameapi.h"
+#include "ghoul2/G2.h"
 
 extern cvar_t	*fx_debug;
 
-#ifdef _SOF2DEV_
+#ifdef _DEBUG
 extern cvar_t	*fx_freeze;
 #endif
 
 extern cvar_t	*fx_countScale;
 extern cvar_t	*fx_nearCull;
-extern cvar_t	*fx_flashRadius;
-
-inline void Vector2Clear(vec2_t a)
-{
-	a[0] = 0.0f;
-	a[1] = 0.0f;
-}
-
-inline void Vector2Set(vec2_t a,float b,float c)
-{
-	a[0] = b;
-	a[1] = c;
-}
-
-inline void Vector2Copy(vec2_t src,vec2_t dst)
-{
-	dst[0] = src[0];
-	dst[1] = src[1];
-}
-
-inline void Vector2MA(vec2_t src, float m, vec2_t v, vec2_t dst)
-{
-	dst[0] = src[0] + (m*v[0]);
-	dst[1] = src[1] + (m*v[1]);
-}
-
-inline void Vector2Scale(vec2_t src,float b,vec2_t dst)
-{
-	dst[0] = src[0] * b;
-	dst[1] = src[1] * b;
-}
 
 class SFxHelper
 {
@@ -61,7 +49,7 @@ public:
 #endif
 
 public:
-	SFxHelper(void);
+	SFxHelper();
 
 	inline	int	GetTime(void) { return mTime; }
 	inline	int	GetFrameTime(void) { return mFrameTime; }
@@ -79,7 +67,7 @@ public:
 	}
 	inline	int		ReadFile( void *data, int len, fileHandle_t fh )
 	{
-		FS_Read2( data, len, fh );
+		FS_Read( data, len, fh );
 		return 1;
 	}
 	inline	void	CloseFile( fileHandle_t fh )
@@ -117,7 +105,7 @@ public:
 			max = vec3_origin;
 		}
 
-		memset(td, sizeof(*td), 0);
+		memset(td, 0, sizeof(*td));
 		VectorCopy(start, td->mStart);
 		VectorCopy(min, td->mMins);
 		VectorCopy(max, td->mMaxs);
@@ -125,7 +113,7 @@ public:
 		td->mSkipNumber = skipEntNum;
 		td->mMask = flags;
 
-		VM_Call( cgvm, CG_TRACE );
+		CGVM_Trace();
 
 		tr = td->mResult;
 	}
@@ -137,7 +125,7 @@ public:
 
 		assert(!ent || ent->renderfx >= 0);
 #endif
-		re.AddRefEntityToScene( ent );
+		re->AddRefEntityToScene( ent );
 	}
 	inline	void	AddFxToScene( miniRefEntity_t *ent )
 	{
@@ -146,38 +134,34 @@ public:
 
 		assert(!ent || ent->renderfx >= 0);
 #endif
-		re.AddMiniRefEntityToScene( ent );
+		re->AddMiniRefEntityToScene( ent );
 	}
-#ifndef VV_LIGHTING
 	inline	void	AddLightToScene( vec3_t org, float radius, float red, float green, float blue )
 	{
-		re.AddLightToScene(	org, radius, red, green, blue );
+		re->AddLightToScene(	org, radius, red, green, blue );
 	}
-#endif
 
 	inline	int		RegisterShader( const char *shader )
 	{
-		return re.RegisterShader( shader );
+		return re->RegisterShader( shader );
 	}
 	inline	int		RegisterModel( const char *model )
 	{
-		return re.RegisterModel( model );
+		return re->RegisterModel( model );
 	}
 
 	inline	void	AddPolyToScene( int shader, int count, polyVert_t *verts )
 	{
-		re.AddPolyToScene( shader, count, verts, 1 );
+		re->AddPolyToScene( shader, count, verts, 1 );
 	}
 
 	inline void AddDecalToScene ( qhandle_t shader, const vec3_t origin, const vec3_t dir, float orientation, float r, float g, float b, float a, qboolean alphaFade, float radius, qboolean temporary )
 	{
-		re.AddDecalToScene ( shader, origin, dir, orientation, r, g, b, a, alphaFade, radius, temporary );
+		re->AddDecalToScene ( shader, origin, dir, orientation, r, g, b, a, alphaFade, radius, temporary );
 	}
 
 	void	CameraShake( vec3_t origin, float intensity, int radius, int time );
-	qboolean SFxHelper::GetOriginAxisFromBolt(CGhoul2Info_v *pGhoul2, int mEntNum, int modelNum, int boltNum, vec3_t /*out*/origin, vec3_t /*out*/axis[3]);
+	qboolean GetOriginAxisFromBolt(CGhoul2Info_v *pGhoul2, int mEntNum, int modelNum, int boltNum, vec3_t /*out*/origin, vec3_t /*out*/axis[3]);
 };
 
 extern SFxHelper	theFxHelper;
-
-#endif // FX_SYSTEM_H_INC

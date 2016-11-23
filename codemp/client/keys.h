@@ -1,30 +1,37 @@
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
+
+#pragma once
+
 #include "ui/keycodes.h"
 
-typedef struct {
+typedef struct qkey_s {
 	qboolean	down;
-	int			repeats;		// if > 1, it is autorepeating
+	int			repeats; // if > 1, it is autorepeating
 	char		*binding;
 } qkey_t;
 
-#define	MAX_EDIT_LINE		256
-#define COMMAND_HISTORY		32
-
-typedef struct {
-	int		cursor;
-	int		scroll;
-	int		widthInChars;
-	char	buffer[MAX_EDIT_LINE];
-} field_t;
-
-typedef struct keyGlobals_s
-{
-	field_t		historyEditLines[COMMAND_HISTORY];
-
-	int			nextHistoryLine;		// the last line in the history buffer, not masked
-	int			historyLine;			// the line being displayed from history buffer
-										// will be <= nextHistoryLine
-	field_t		g_consoleField;
-
+typedef struct keyGlobals_s {
 	qboolean	anykeydown;
 	qboolean	key_overstrikeMode;
 	int			keyDownCount;
@@ -32,32 +39,35 @@ typedef struct keyGlobals_s
 	qkey_t		keys[K_LAST_KEY];
 } keyGlobals_t;
 
-
-typedef struct 
-{
-	char	*name;
-	int		keynum;
+typedef struct keyname_s {
+	const char	*name;
+	int			keynum;
 } keyname_t;
 
 extern keyGlobals_t	kg;
 extern keyname_t	keynames[K_LAST_KEY];
 
+// console
+extern field_t		g_consoleField;
+extern int			nextHistoryLine;	// the last line in the history buffer, not masked
+extern int			historyLine;		// the line being displayed from history buffer will be <= nextHistoryLine
+extern field_t		historyEditLines[COMMAND_HISTORY];
 
-void Field_Clear( field_t *edit );
-void Field_KeyDownEvent( field_t *edit, int key );
-void Field_CharEvent( field_t *edit, int ch );
-void Field_Draw( field_t *edit, int x, int y, int width, qboolean showCursor );
-void Field_BigDraw( field_t *edit, int x, int y, int width, qboolean showCursor );
+// chat
+extern field_t		chatField;
+extern qboolean		chat_team;
+extern int			chat_playerNum;
 
-extern	field_t	chatField;
-extern	qboolean	chat_team;
-extern	int			chat_playerNum;
+void	Field_KeyDownEvent	( field_t *edit, int key );
+void	Field_CharEvent		( field_t *edit, int ch );
+void	Field_Draw			( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
+void	Field_BigDraw		( field_t *edit, int x, int y, int width, qboolean showCursor, qboolean noColorEscape );
 
-void Key_WriteBindings( fileHandle_t f );
-void Key_SetBinding( int keynum, const char *binding );
-char *Key_GetBinding( int keynum );
-qboolean Key_IsDown( int keynum );
-qboolean Key_GetOverstrikeMode( void );
-void Key_SetOverstrikeMode( qboolean state );
-void Key_ClearStates( void );
-int Key_GetKey(const char *binding);
+void		Key_SetBinding			( int keynum, const char *binding );
+char *		Key_GetBinding			( int keynum );
+qboolean	Key_IsDown				( int keynum );
+int			Key_StringToKeynum		( char *str );
+qboolean	Key_GetOverstrikeMode	( void );
+void		Key_SetOverstrikeMode	( qboolean state );
+void		Key_ClearStates			( void );
+int			Key_GetKey				( const char *binding );

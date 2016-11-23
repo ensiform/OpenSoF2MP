@@ -1,4 +1,6 @@
-#include "qcommon\q_shared.h"
+#pragma once
+
+#include "qcommon/q_shared.h"
 
 void Mat_Init(void);
 void Mat_Reset(void);

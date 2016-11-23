@@ -1,12 +1,33 @@
-// Copyright (C) 1999-2000 Id Software, Inc.
-//
-#ifndef G_PUBLIC_H
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
 
 // g_public.h -- game module information visible to server
 
-#define G_PUBLIC_H
+#pragma once
 
-#define Q3_INFINITE			16777216 
+#include "qcommon/q_shared.h"
+
+#define Q3_INFINITE			16777216
 
 #define	GAME_API_VERSION	8
 
@@ -15,8 +36,8 @@
 // in entityStates (level eType), so the game must explicitly flag
 // special server behaviors
 #define	SVF_NOCLIENT			0x00000001	// don't send entity to clients, even if it has effects
+#define SVF_BROADCASTCLIENTS	0x00000002	// only broadcast to clients specified in r.broadcastClients[clientNum/32]
 #define SVF_BOT					0x00000008	// set if the entity is a bot
-#define SVF_PLAYER_USABLE		0x00000010	// player can use this with the use button
 #define	SVF_BROADCAST			0x00000020	// send to all connected clients
 #define	SVF_PORTAL				0x00000040	// merge a second pvs at origin2 into snapshots
 #define	SVF_USE_CURRENT_ORIGIN	0x00000080	// entity->r.currentOrigin instead of entity->s.origin
@@ -29,35 +50,17 @@
 #define SVF_NOTSINGLECLIENT		0x00000800	// send entity to everyone but one client
 											// (entityShared_t->singleClient)
 
-#define SVF_OWNERNOTSHARED		0x00001000	// If it's owned by something and another thing owned by that something
-											// hits it, it will still touch
-
-#define	SVF_ICARUS_FREEZE		0x00008000	// NPCs are frozen, ents don't execute ICARUS commands
-
 #define SVF_GLASS_BRUSH			0x08000000	// Ent is a glass brush
 
-#define SVF_NO_BASIC_SOUNDS		0x10000000	// No basic sounds
-#define SVF_NO_COMBAT_SOUNDS	0x20000000	// No combat sounds
-#define SVF_NO_EXTRA_SOUNDS		0x40000000	// No extra or jedi sounds
-
-//rww - ghoul2 trace flags
-#define G2TRFLAG_DOGHOULTRACE	0x00000001 //do the ghoul2 trace
-#define G2TRFLAG_HITCORPSES		0x00000002 //will try g2 collision on the ent even if it's EF_DEAD
-#define G2TRFLAG_GETSURFINDEX	0x00000004 //will replace surfaceFlags with the ghoul2 surface index that was hit, if any.
-#define G2TRFLAG_THICK			0x00000008 //assures that the trace radius will be significantly large regardless of the trace box size.
+#define SVF_INFLATED_BBOX		0x00001000	// Bounding box has been doubled
+#define SVF_LINKHACK			0x10000000	// Hack to link an entity into extra clusters
+#define SVF_DETAIL				0x20000000	// Entity is a detail entity and can be dropped from the snapshot
+#define SVF_SKIP				0x80000000	// Dont include this entity in the current snapshot (internal use only)
 
 //===============================================================
 
-//this structure is shared by gameside and in-engine NPC nav routines.
-typedef struct failedEdge_e
-{
-	int	startID;
-	int	endID;
-	int checkTime;
-	int	entID;
-} failedEdge_t;
 
-typedef struct {
+typedef struct entityShared_s {
 	qboolean	linked;				// qfalse if not in any good cluster
 	int			linkcount;
 
@@ -78,7 +81,6 @@ typedef struct {
 	// to avoid simultanious collision issues
 	vec3_t		currentOrigin;
 	vec3_t		currentAngles;
-	qboolean	mIsRoffing;			// set to qtrue when the entity is being roffed
 
 	// when a trace call is made and passEntityNum != ENTITYNUM_NONE,
 	// an ent will be excluded from testing if:
@@ -87,12 +89,24 @@ typedef struct {
 	// entity[ent->s.ownerNum].ownerNum = passEntityNum	(don't interact with other missiles from owner)
 	int			ownerNum;
 
-	// mask of clients that this entity should be broadcast too.  The first 32 clients
-	// are represented by the first array index and the latter 32 clients are represented
-	// by the second array index.
-	int			broadcastClients[2];
+	// mask of clients that this entity should be broadcast to
+	// the first 32 clients are represented by the first array index and the latter 32 clients are represented by the
+	//	second array index.
+	uint32_t	broadcastClients[2];
+
+	int			detailTime;
 
 } entityShared_t;
+
+
+
+// the server looks at a sharedEntity, which is the start of the game's gentity_t structure
+typedef struct {
+	entityState_t	s;				// communicated by server to clients
+	entityShared_t	r;				// shared by both the server system and game
+} sharedEntity_t;
+
+
 
 //===============================================================
 
@@ -480,159 +494,6 @@ typedef enum {
 	G_GT_SENDEVENT,
 } gameImport_t;
 
-//bstate.h
-typedef enum //# bState_e
-{//These take over only if script allows them to be autonomous
-	BS_DEFAULT = 0,//# default behavior for that NPC
-	BS_ADVANCE_FIGHT,//# Advance to captureGoal and shoot enemies if you can
-	BS_SLEEP,//# Play awake script when startled by sound
-	BS_FOLLOW_LEADER,//# Follow your leader and shoot any enemies you come across
-	BS_JUMP,//# Face navgoal and jump to it.
-	BS_SEARCH,//# Using current waypoint as a base, search the immediate branches of waypoints for enemies
-	BS_WANDER,//# Wander down random waypoint paths
-	BS_NOCLIP,//# Moves through walls, etc.
-	BS_REMOVE,//# Waits for player to leave PVS then removes itself
-	BS_CINEMATIC,//# Does nothing but face it's angles and move to a goal if it has one
-	//# #eol
-	//internal bStates only
-	BS_WAIT,//# Does nothing but face it's angles
-	BS_STAND_GUARD,
-	BS_PATROL,
-	BS_INVESTIGATE,//# head towards temp goal and look for enemies and listen for sounds
-	BS_STAND_AND_SHOOT,
-	BS_HUNT_AND_KILL,
-	BS_FLEE,//# Run away!
-	NUM_BSTATES
-} bState_t;
-
-enum
-{
-	EDGE_NORMAL,
-	EDGE_PATH,
-	EDGE_BLOCKED,
-	EDGE_FAILED,
-	EDGE_MOVEDIR
-};
-
-enum
-{
-	NODE_NORMAL,
-	NODE_START,
-	NODE_GOAL,
-	NODE_NAVGOAL,
-};
-
-typedef enum //# taskID_e
-{
-	TID_CHAN_VOICE = 0,	// Waiting for a voice sound to complete
-	TID_ANIM_UPPER,		// Waiting to finish a lower anim holdtime
-	TID_ANIM_LOWER,		// Waiting to finish a lower anim holdtime
-	TID_ANIM_BOTH,		// Waiting to finish lower and upper anim holdtimes or normal md3 animating
-	TID_MOVE_NAV,		// Trying to get to a navgoal or For ET_MOVERS
-	TID_ANGLE_FACE,		// Turning to an angle or facing
-	TID_BSTATE,			// Waiting for a certain bState to finish
-	TID_LOCATION,		// Waiting for ent to enter a specific trigger_location
-//	TID_MISSIONSTATUS,	// Waiting for player to finish reading MISSION STATUS SCREEN
-	TID_RESIZE,			// Waiting for clear bbox to inflate size
-	TID_SHOOT,			// Waiting for fire event
-	NUM_TIDS,			// for def of taskID array
-} taskID_t;
-
-typedef enum //# bSet_e
-{//This should check to matching a behavior state name first, then look for a script
-	BSET_INVALID = -1,
-	BSET_FIRST = 0,
-	BSET_SPAWN = 0,//# script to use when first spawned
-	BSET_USE,//# script to use when used
-	BSET_AWAKE,//# script to use when awoken/startled
-	BSET_ANGER,//# script to use when aquire an enemy
-	BSET_ATTACK,//# script to run when you attack
-	BSET_VICTORY,//# script to run when you kill someone
-	BSET_LOSTENEMY,//# script to run when you can't find your enemy
-	BSET_PAIN,//# script to use when take pain
-	BSET_FLEE,//# script to use when take pain below 50% of health
-	BSET_DEATH,//# script to use when killed
-	BSET_DELAYED,//# script to run when self->delayScriptTime is reached
-	BSET_BLOCKED,//# script to run when blocked by a friendly NPC or player
-	BSET_BUMPED,//# script to run when bumped into a friendly NPC or player (can set bumpRadius)
-	BSET_STUCK,//# script to run when blocked by a wall
-	BSET_FFIRE,//# script to run when player shoots their own teammates
-	BSET_FFDEATH,//# script to run when player kills a teammate
-	BSET_MINDTRICK,//# script to run when player does a mind trick on this NPC
-
-	NUM_BSETS
-} bSet_t;
-
-#define	MAX_PARMS	16
-#define	MAX_PARM_STRING_LENGTH	MAX_QPATH//was 16, had to lengthen it so they could take a valid file path
-typedef struct
-{	
-	char	parm[MAX_PARMS][MAX_PARM_STRING_LENGTH];
-} parms_t;
-
-#define MAX_FAILED_NODES 8
-
-#if (!defined(MACOS_X) && !defined(__GCC__) && !defined(__GNUC__))
-typedef struct Vehicle_s Vehicle_t;
-#endif
-
-// the server looks at a sharedEntity, which is the start of the game's gentity_t structure
-//mod authors should not touch this struct
-typedef struct {
-	entityState_t	s;				// communicated by server to clients
-	playerState_t	*playerState;	//needs to be in the gentity for bg entity access
-									//if you want to actually see the contents I guess
-									//you will have to be sure to VMA it first.
-#if (!defined(MACOS_X) && !defined(__GCC__) && !defined(__GNUC__))
-	Vehicle_t		*m_pVehicle; //vehicle data
-#else
-	struct Vehicle_s		*m_pVehicle; //vehicle data
-#endif
-	void			*ghoul2; //g2 instance
-	int				localAnimIndex; //index locally (game/cgame) to anim data for this skel
-	vec3_t			modelScale; //needed for g2 collision
-
-	//from here up must also be unified with bgEntity/centity
-
-	entityShared_t	r;				// shared by both the server system and game
-
-	//Script/ICARUS-related fields
-	int				taskID[NUM_TIDS];
-	parms_t			*parms;
-	char			*behaviorSet[NUM_BSETS];
-	char			*script_targetname;
-	int				delayScriptTime;
-	char			*fullName;
-
-	//rww - targetname and classname are now shared as well. ICARUS needs access to them.
-	char			*targetname;
-	char			*classname;			// set in QuakeEd
-
-	//rww - and yet more things to share. This is because the nav code is in the exe because it's all C++.
-	int				waypoint;			//Set once per frame, if you've moved, and if someone asks
-	int				lastWaypoint;		//To make sure you don't double-back
-	int				lastValidWaypoint;	//ALWAYS valid -used for tracking someone you lost
-	int				noWaypointTime;		//Debouncer - so don't keep checking every waypoint in existance every frame that you can't find one
-	int				combatPoint;
-	int				failedWaypoints[MAX_FAILED_NODES];
-	int				failedWaypointCheckTime;
-
-	int				next_roff_time; //rww - npc's need to know when they're getting roff'd
-} sharedEntity_t;
-
-#ifdef __cplusplus
-class CSequencer;
-class CTaskManager;
-
-//I suppose this could be in another in-engine header or something. But we never want to
-//include an icarus file before sharedentity_t is declared.
-extern CSequencer	*gSequencers[MAX_GENTITIES];
-extern CTaskManager	*gTaskManagers[MAX_GENTITIES];
-
-#include "icarus/icarus.h"
-#include "icarus/sequencer.h"
-#include "icarus/taskmanager.h"
-#endif
 
 //
 // functions exported by the game subsystem
@@ -677,129 +538,3 @@ typedef enum {
 
 	GAME_GAMETYPE_COMMAND,			// ( int cmd, int arg0, int arg1, int arg2, int arg3, int arg4 );
 } gameExport_t;
-
-typedef struct
-{
-	int taskID;
-	int entID;
-	char name[2048];
-	char channel[2048];
-} T_G_ICARUS_PLAYSOUND;
-
-
-typedef struct
-{
-	int taskID;
-	int entID;
-	char type_name[2048];
-	char data[2048];
-} T_G_ICARUS_SET;
-
-typedef struct
-{
-	int taskID;
-	int entID; 
-	vec3_t origin;
-	vec3_t angles;
-	float duration;
-	qboolean nullAngles; //special case
-} T_G_ICARUS_LERP2POS;
-
-typedef struct
-{
-	int taskID;
-	int entID;
-	vec3_t origin;
-	float duration;
-} T_G_ICARUS_LERP2ORIGIN;
-
-typedef struct
-{
-	int taskID;
-	int entID;
-	vec3_t angles;
-	float duration;
-} T_G_ICARUS_LERP2ANGLES;
-
-typedef struct
-{
-	int entID;
-	char name[2048];
-	int lookup;
-	vec3_t info;
-} T_G_ICARUS_GETTAG;
-
-typedef struct
-{
-	int entID;
-	int taskID;
-	float duration;
-} T_G_ICARUS_LERP2START;
-
-typedef struct
-{
-	int entID;
-	int taskID;
-	float duration;
-} T_G_ICARUS_LERP2END;
-
-typedef struct
-{
-	int entID;
-	char target[2048];
-} T_G_ICARUS_USE;
-
-typedef struct
-{
-	int entID;
-	char name[2048];
-} T_G_ICARUS_KILL;
-
-typedef struct
-{
-	int entID;
-	char name[2048];
-} T_G_ICARUS_REMOVE;
-
-typedef struct
-{
-	int taskID;
-	int entID;
-	char type[2048];
-	char name[2048];
-} T_G_ICARUS_PLAY;
-
-typedef struct
-{
-	int entID;
-	int type;
-	char name[2048];
-	float value;
-} T_G_ICARUS_GETFLOAT;
-
-typedef struct
-{
-	int entID;
-	int type;
-	char name[2048];
-	vec3_t value;
-} T_G_ICARUS_GETVECTOR;
-
-typedef struct
-{
-	int entID;
-	int type;
-	char name[2048];
-	char value[2048];
-} T_G_ICARUS_GETSTRING;
-
-typedef struct
-{
-	char filename[2048];
-} T_G_ICARUS_SOUNDINDEX;
-typedef struct
-{
-	char string[2048];
-} T_G_ICARUS_GETSETIDFORSTRING;
-
-#endif //G_PUBLIC_H

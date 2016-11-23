@@ -1,10 +1,31 @@
-//Anything above this #include will be ignored by the compiler
-#include "qcommon/exe_headers.h"
+/*
+===========================================================================
+Copyright (C) 1999 - 2005, Id Software, Inc.
+Copyright (C) 2000 - 2013, Raven Software, Inc.
+Copyright (C) 2001 - 2013, Activision, Inc.
+Copyright (C) 2013 - 2015, OpenJK contributors
+
+This file is part of the OpenJK source code.
+
+OpenJK is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License version 2 as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see <http://www.gnu.org/licenses/>.
+===========================================================================
+*/
 
 // world.c -- world query functions
 
 #include "server.h"
 #include "ghoul2/ghoul2_shared.h"
+#include "qcommon/cm_public.h"
 
 /*
 ================
@@ -99,7 +120,7 @@ worldSector_t *SV_CreateworldSector( int depth, vec3_t mins, vec3_t maxs ) {
 		anode->children[0] = anode->children[1] = NULL;
 		return anode;
 	}
-	
+
 	VectorSubtract (maxs, mins, size);
 	if (size[0] > size[1]) {
 		anode->axis = 0;
@@ -108,13 +129,13 @@ worldSector_t *SV_CreateworldSector( int depth, vec3_t mins, vec3_t maxs ) {
 	}
 
 	anode->dist = 0.5 * (maxs[anode->axis] + mins[anode->axis]);
-	VectorCopy (mins, mins1);	
-	VectorCopy (mins, mins2);	
-	VectorCopy (maxs, maxs1);	
-	VectorCopy (maxs, maxs2);	
-	
+	VectorCopy (mins, mins1);
+	VectorCopy (mins, mins2);
+	VectorCopy (maxs, maxs1);
+	VectorCopy (maxs, maxs2);
+
 	maxs1[anode->axis] = mins2[anode->axis] = anode->dist;
-	
+
 	anode->children[0] = SV_CreateworldSector (depth+1, mins2, maxs2);
 	anode->children[1] = SV_CreateworldSector (depth+1, mins1, maxs1);
 
@@ -231,7 +252,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 
 		if (gEnt->s.solid == SOLID_BMODEL)
 		{ //yikes, this would make everything explode violently.
-			gEnt->s.solid = (k<<16) | (j<<8) | i-1;
+			gEnt->s.solid = (k<<16) | (j<<8) | (i-1);
 		}
 	}
 	else
@@ -247,7 +268,6 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 	if ( gEnt->r.bmodel && (angles[0] || angles[1] || angles[2]) ) {
 		// expand for rotation
 		float		max;
-		int			i;
 
 		max = RadiusFromBounds( gEnt->r.mins, gEnt->r.maxs );
 		for (i=0 ; i<3 ; i++) {
@@ -256,7 +276,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 		}
 	} else {
 		// normal
-		VectorAdd (origin, gEnt->r.mins, gEnt->r.absmin);	
+		VectorAdd (origin, gEnt->r.mins, gEnt->r.absmin);
 		VectorAdd (origin, gEnt->r.maxs, gEnt->r.absmax);
 	}
 
@@ -336,7 +356,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 		else
 			break;		// crosses the node
 	}
-	
+
 	// link it in
 	ent->worldSector = node;
 	ent->nextEntityInWorldSector = node->entities;
@@ -355,7 +375,7 @@ bounds.  This does NOT mean that they actually touch in the case of bmodels.
 ============================================================================
 */
 
-typedef struct {
+typedef struct areaParms_s {
 	const float	*mins;
 	const float	*maxs;
 	int			*list;
@@ -372,9 +392,6 @@ SV_AreaEntities_r
 void SV_AreaEntities_r( worldSector_t *node, areaParms_t *ap ) {
 	svEntity_t	*check, *next;
 	sharedEntity_t *gcheck;
-	int			count;
-
-	count = 0;
 
 	for ( check = node->entities  ; check ; check = next ) {
 		next = check->nextEntityInWorldSector;
@@ -398,7 +415,7 @@ void SV_AreaEntities_r( worldSector_t *node, areaParms_t *ap ) {
 		ap->list[ap->count] = check - sv.svEntities;
 		ap->count++;
 	}
-	
+
 	if (node->axis == -1) {
 		return;		// terminal node
 	}
@@ -436,7 +453,7 @@ int SV_AreaEntities( const vec3_t mins, const vec3_t maxs, int *entityList, int 
 //===========================================================================
 
 
-typedef struct {
+typedef struct moveclip_s {
 	vec3_t		boxmins, boxmaxs;// enclose the test object along entire move
 	const float	*mins;
 	const float *maxs;	// size of the moving object
@@ -509,7 +526,7 @@ SV_ClipMoveToEntities
 ====================
 */
 #ifndef FINAL_BUILD
-static float VectorDistance(vec3_t p1, vec3_t p2) 
+static float VectorDistance(vec3_t p1, vec3_t p2)
 {
 	vec3_t dir;
 
@@ -517,16 +534,15 @@ static float VectorDistance(vec3_t p1, vec3_t p2)
 	return VectorLength(dir);
 }
 #endif
-#pragma warning(disable : 4701) //local variable used without having been init
+
 static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 	static int	touchlist[MAX_GENTITIES];
 	int			i, num;
 	sharedEntity_t *touch;
 	int			passOwnerNum;
-	trace_t		trace, oldTrace= {qfalse};
+	trace_t		trace;
 	clipHandle_t	clipHandle;
 	float		*origin, *angles;
-	int			thisOwnerShared = 1;
 
 	num = SV_AreaEntities( clip->boxmins, clip->boxmaxs, touchlist, MAX_GENTITIES);
 
@@ -537,11 +553,6 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 		}
 	} else {
 		passOwnerNum = -1;
-	}
-
-	if ( SV_GentityNum(clip->passEntityNum)->r.svFlags & SVF_OWNERNOTSHARED )
-	{
-		thisOwnerShared = 0;
 	}
 
 	for ( i=0 ; i<num ; i++ ) {
@@ -555,41 +566,17 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 			if ( touchlist[i] == clip->passEntityNum ) {
 				continue;	// don't clip against the pass entity
 			}
-			if ( touch->r.ownerNum == clip->passEntityNum) {
-				if (touch->r.svFlags & SVF_OWNERNOTSHARED)
-				{
-					if (clip->contentmask != (MASK_SHOT))
-					{ //it's not a laser hitting the other "missile", don't care then
-						continue;
-					}
-				}
-				else
-				{
-					continue;	// don't clip against own missiles
-				}
+			if ( touch->r.ownerNum == clip->passEntityNum ) {
+				continue;	// don't clip against own missiles
 			}
-			if ( touch->r.ownerNum == passOwnerNum &&
-				!(touch->r.svFlags & SVF_OWNERNOTSHARED) &&
-				thisOwnerShared ) {
+			if ( touch->r.ownerNum == passOwnerNum ) {
 				continue;	// don't clip against other missiles from our owner
-			}
-
-			if (touch->s.eType == ET_MISSILE &&
-				!(touch->r.svFlags & SVF_OWNERNOTSHARED) &&
-				touch->r.ownerNum == passOwnerNum)
-			{ //blah, hack
-				continue;
 			}
 		}
 
 		// if it doesn't have any brushes of a type we
 		// are looking for, ignore it
 		if ( ! ( clip->contentmask & touch->r.contents ) ) {
-			continue;
-		}
-
-		if (clip->contentmask == MASK_SHOT && (touch->r.contents > 0 && (touch->r.contents & CONTENTS_NOSHOT)))
-		{
 			continue;
 		}
 
@@ -608,12 +595,6 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 			(float *)clip->mins, (float *)clip->maxs, clipHandle,  clip->contentmask,
 			origin, angles, clip->capsule);
 
-
-		if (clip->traceFlags & G2TRFLAG_DOGHOULTRACE)
-		{ // keep these older variables around for a bit, incase we need to replace them in the Ghoul2 Collision check
-			oldTrace = clip->trace;
-		}
-
 		if ( trace.allsolid ) {
 			clip->trace.allsolid = qtrue;
 			trace.entityNum = touch->s.number;
@@ -626,7 +607,7 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 		}
 
 		if ( trace.fraction < clip->trace.fraction ) {
-			byte	oldStart;
+			qboolean	oldStart;
 
 			// make sure we keep a startsolid from a previous trace
 			oldStart = clip->trace.startsolid;
@@ -635,146 +616,8 @@ static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 			clip->trace = trace;
 			clip->trace.startsolid = (qboolean)((unsigned)clip->trace.startsolid | (unsigned)oldStart);
 		}
-/*
-Ghoul2 Insert Start
-*/
-#if 0
-		// decide if we should do the ghoul2 collision detection right here
-		if ((trace.entityNum == touch->s.number) && (clip->traceFlags))
-		{
-			// do we actually have a ghoul2 model here?
-			if (touch->s.ghoul2)
-			{
-				int			oldTraceRecSize = 0;
-				int			newTraceRecSize = 0;
-				int			z;
-
-				// we have to do this because sometimes you may hit a model's bounding box, but not actually penetrate the Ghoul2 Models polygons
-				// this is, needless to say, not good. So we must check to see if we did actually hit the model, and if not, reset the trace stuff
-				// to what it was to begin with
-
-				// set our trace record size
-				for (z=0;z<MAX_G2_COLLISIONS;z++)
-				{
-					if (clip->trace.G2CollisionMap[z].mEntityNum != -1)
-					{
-						oldTraceRecSize++;
-					}
-				}
-
-				G2API_CollisionDetect(&clip->trace.G2CollisionMap[0], *((CGhoul2Info_v *)touch->s.ghoul2),
-					touch->s.angles, touch->s.origin, svs.time, touch->s.number, clip->start, clip->end, touch->s.modelScale, G2VertSpaceServer, clip->traceFlags, clip->useLod);
-
-				// set our new trace record size
- 
-				for (z=0;z<MAX_G2_COLLISIONS;z++)
-				{
-					if (clip->trace.G2CollisionMap[z].mEntityNum != -1)
-					{
-						newTraceRecSize++;
-					}
-				}
-
-				// did we actually touch this model? If not, lets reset this ent as being hit..
-				if (newTraceRecSize == oldTraceRecSize)
-				{
-					clip->trace = oldTrace;
-				}
-			}
-		}
-#else
-		//rww - since this is multiplayer and we don't have the luxury of violating networking rules in horrible ways,
-		//this must be done somewhat differently.
-		if ((clip->traceFlags & G2TRFLAG_DOGHOULTRACE) && trace.entityNum == touch->s.number && touch->ghoul2 && ((clip->traceFlags & G2TRFLAG_HITCORPSES) || !(touch->s.eFlags & EF_DEAD)))
-		{ //standard behavior will be to ignore g2 col on dead ents, but if traceFlags is set to allow, then we'll try g2 col on EF_DEAD people too.
-			static G2Trace_t G2Trace;
-			vec3_t angles;
-			float fRadius = 0.0f;
-			int tN = 0;
-			int bestTr = -1;
-
-			if (clip->mins[0] ||
-				clip->maxs[0])
-			{
-				fRadius=(clip->maxs[0]-clip->mins[0])/2.0f;
-			}
-
-			if (clip->traceFlags & G2TRFLAG_THICK)
-			{ //if using this flag, make sure it's at least 1.0f
-				if (fRadius < 1.0f)
-				{
-					fRadius = 1.0f;
-				}
-			}
-
-			memset (&G2Trace, 0, sizeof(G2Trace));
-			while (tN < MAX_G2_COLLISIONS)
-			{
-				G2Trace[tN].mEntityNum = -1;
-				tN++;
-			}
-
-			if (touch->s.number < MAX_CLIENTS)
-			{
-				VectorCopy(touch->s.apos.trBase, angles);
-			}
-			else
-			{
-				VectorCopy(touch->r.currentAngles, angles);
-			}
-			angles[ROLL] = angles[PITCH] = 0;
-
-			//I would think that you could trace from trace.endpos instead of clip->start, but that causes it to miss sometimes.. Not sure what it's off, but if it could be done like that, it would probably
-			//be faster.
-#ifndef FINAL_BUILD
-			if (sv_showghoultraces->integer)
-			{
-				Com_Printf( "Ghoul2 trace   lod=%1d   length=%6.0f   to %s\n",clip->useLod,VectorDistance(clip->start, clip->end),(*((CGhoul2Info_v *)touch->ghoul2))[0].mFileName);
-			}
-#endif
-
-			re.G2API_CollisionDetect(G2Trace, *((CGhoul2Info_v *)touch->ghoul2), angles, touch->r.currentOrigin, svs.time, touch->s.number, clip->start, clip->end, touch->modelScale, G2VertSpaceServer, 0, clip->useLod, fRadius);
-
-			tN = 0;
-			while (tN < MAX_G2_COLLISIONS)
-			{
-				if (G2Trace[tN].mEntityNum == touch->s.number)
-				{ //ok, valid
-					bestTr = tN;
-					break;
-				}
-				else if (G2Trace[tN].mEntityNum == -1)
-				{ //there should not be any after the first -1
-					break;
-				}
-				tN++;
-			}
-
-			if (bestTr == -1)
-			{ //Well then, put the trace back to the old one.
-				clip->trace = oldTrace;
-			}
-			else
-			{ //Otherwise, set the endpos/normal/etc. to the model location hit instead of leaving it out in space.
-				VectorCopy(G2Trace[bestTr].mCollisionPosition, clip->trace.endpos);
-				VectorCopy(G2Trace[bestTr].mCollisionNormal, clip->trace.plane.normal);
-
-				if (clip->traceFlags & G2TRFLAG_GETSURFINDEX)
-				{ //we have requested that surfaceFlags be stomped over with the g2 hit surface index.
-					if (clip->trace.entityNum == G2Trace[bestTr].mEntityNum)
-					{
-						clip->trace.surfaceFlags = G2Trace[bestTr].mSurfaceIndex;
-					}
-				}
-			}
-		}
-#endif
-/*
-Ghoul2 Insert End
-*/
 	}
 }
-#pragma warning(default : 4701) //local variable used without having been init
 
 /*
 ==================
@@ -814,7 +657,7 @@ Ghoul2 Insert End
 	clip.contentmask = contentmask;
 /*
 Ghoul2 Insert Start
-*/	
+*/
 	VectorCopy( start, clip.start );
 	clip.traceFlags = traceFlags;
 	clip.useLod = useLod;
@@ -861,7 +704,6 @@ int SV_PointContents( const vec3_t p, int passEntityNum ) {
 	int			i, num;
 	int			contents, c2;
 	clipHandle_t	clipHandle;
-	float		*angles;
 
 	// get base contents from world
 	contents = CM_PointContents( p, 0 );
@@ -876,12 +718,8 @@ int SV_PointContents( const vec3_t p, int passEntityNum ) {
 		hit = SV_GentityNum( touch[i] );
 		// might intersect, so do an exact clip
 		clipHandle = SV_ClipHandleForEntity( hit );
-		angles = hit->s.angles;
-		if ( !hit->r.bmodel ) {
-			angles = vec3_origin;	// boxes don't rotate
-		}
 
-		c2 = CM_TransformedPointContents (p, clipHandle, hit->s.origin, hit->s.angles);
+		c2 = CM_TransformedPointContents (p, clipHandle, hit->r.currentOrigin, hit->r.currentAngles);
 
 		contents |= c2;
 	}
