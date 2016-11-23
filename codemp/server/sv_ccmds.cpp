@@ -434,7 +434,7 @@ static void SV_Kick_f( void ) {
 		return;
 	}
 
-	if (!Q_stricmp(Cmd_Argv(1), "Padawan"))
+	if (!Q_stricmp(Cmd_Argv(1), "UnnamedPlayer"))
 	{ //if you try to kick the default name, also try to kick ""
 		SV_KickBlankPlayers();
 	}
