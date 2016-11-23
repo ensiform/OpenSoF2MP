@@ -580,6 +580,9 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.HunkClearCrap						= RE_HunkClearCrap;
 
 	// G2API
+	re.G2API_GetInfo						= G2API_GetInfo;
+	re.G2API_IsGhoul2InfovValid				= G2API_IsGhoul2InfovValid;
+
 	re.G2API_AddBolt						= G2API_AddBolt;
 	re.G2API_AddBoltSurfNum					= G2API_AddBoltSurfNum;
 	re.G2API_AddSurface						= G2API_AddSurface;
@@ -616,14 +619,12 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.G2API_GetSurfaceName					= G2API_GetSurfaceName;
 	re.G2API_GetSurfaceOnOff				= G2API_GetSurfaceOnOff;
 	re.G2API_GetSurfaceRenderStatus			= G2API_GetSurfaceRenderStatus;
-	re.G2API_GetTime						= G2API_GetTime;
 	re.G2API_Ghoul2Size						= G2API_Ghoul2Size;
 	re.G2API_GiveMeVectorFromMatrix			= G2API_GiveMeVectorFromMatrix;
 	re.G2API_HasGhoul2ModelOnIndex			= G2API_HasGhoul2ModelOnIndex;
 	re.G2API_HaveWeGhoul2Models				= G2API_HaveWeGhoul2Models;
 	re.G2API_IKMove							= G2API_IKMove;
 	re.G2API_InitGhoul2Model				= G2API_InitGhoul2Model;
-	re.G2API_IsGhoul2InfovValid				= G2API_IsGhoul2InfovValid;
 	re.G2API_IsPaused						= G2API_IsPaused;
 	re.G2API_ListBones						= G2API_ListBones;
 	re.G2API_ListSurfaces					= G2API_ListSurfaces;
@@ -661,8 +662,6 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.G2API_SetShader						= G2API_SetShader;
 	re.G2API_SetSkin						= G2API_SetSkin;
 	re.G2API_SetSurfaceOnOff				= G2API_SetSurfaceOnOff;
-	re.G2API_SetTime						= G2API_SetTime;
-	re.G2API_SkinlessModel					= G2API_SkinlessModel;
 	re.G2API_StopBoneAngles					= G2API_StopBoneAngles;
 	re.G2API_StopBoneAnglesIndex			= G2API_StopBoneAnglesIndex;
 	re.G2API_StopBoneAnim					= G2API_StopBoneAnim;
@@ -672,7 +671,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.G2API_GetNumGoreMarks				= G2API_GetNumGoreMarks;
 	re.G2API_AddSkinGore					= G2API_AddSkinGore;
 	re.G2API_ClearSkinGore					= G2API_ClearSkinGore;
-	#endif // _SOF2
+	#endif // _G2_GORE
 
 	return &re;
 }

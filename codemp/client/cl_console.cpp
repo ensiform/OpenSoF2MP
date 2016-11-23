@@ -443,11 +443,11 @@ void CL_ConsolePrint( const char *txt) {
 
 	// TTimo - prefix for text that shows up in console but not in notify
 	// backported from RTCW adjusted for SOF2
-	if ( txt[0] == '@' ) {
+	if ( !Q_strncmp( txt, "[skipnotify]", 12 ) ) {
 		skipnotify = qtrue;
 		txt += 1;
 	}
-	if ( txt[0] == '*' ) {
+	if ( txt[0] == '@' ) {
 		skipnotify = qtrue;
 		txt += 1;
 	}

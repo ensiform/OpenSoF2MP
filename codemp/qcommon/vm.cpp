@@ -78,6 +78,7 @@ void VM_VmProfile_f( void );
 void VM_Init( void ) {
 	Cvar_Get( "vm_cgame", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
 	Cvar_Get( "vm_game", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
+	Cvar_Get( "vm_gametype", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
 	Cvar_Get( "vm_ui", "2", CVAR_ARCHIVE );		// !@# SHIP WITH SET TO 2
 
 	Cmd_AddCommand ("vmprofile", VM_VmProfile_f );
@@ -336,6 +337,7 @@ intptr_t QDECL VM_DllSyscall( intptr_t arg, ... ) {
 #endif
 }
 
+qboolean FS_Which(const char *filename, void *searchPath);
 int FS_FindVM(void **startSearch, char *found, int foundlen, const char *name, int enableDll);
 long FS_ReadFileDir(const char *qpath, void *searchPath, qboolean unpure, void **buffer);
 
@@ -367,7 +369,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc, qboolean unpure)
 	}
 
 	// show where the qvm was loaded from
-	//FS_Which(filename, vm->searchPath);
+	FS_Which(filename, vm->searchPath);
 
 	if( LittleLong( header.h->vmMagic ) == VM_MAGIC_VER2 ) {
 		Com_Printf( "...which has vmMagic VM_MAGIC_VER2\n" );
@@ -553,11 +555,14 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 
 	// initialise it
 	vm->slot = vmSlot;
-	Q_strncpyz( vm->name, vmNames[vmSlot], sizeof(vm->name) );
+	if ( vm->slot != VM_GAMETYPE )
+		Q_strncpyz( vm->name, vmNames[vmSlot], sizeof(vm->name) );
+	else
+		Com_sprintf( vm->name, sizeof(vm->name), "gt_%s", Cvar_VariableString("g_gametype") );
 
 	do
 	{
-		retval = FS_FindVM(&startSearch, filename, sizeof(filename), vmNames[vmSlot], (interpret == VMI_NATIVE));
+		retval = FS_FindVM(&startSearch, filename, sizeof(filename), vm->name, (interpret == VMI_NATIVE));
 		
 		if(retval == VMI_NATIVE)
 		{
@@ -585,7 +590,10 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 				break;
 
 			// VM_Free overwrites the name on failed load
-			Q_strncpyz(vm->name, vmNames[vmSlot], sizeof(vm->name));
+			if ( vm->slot != VM_GAMETYPE )
+				Q_strncpyz( vm->name, vmNames[vmSlot], sizeof(vm->name) );
+			else
+				Com_sprintf( vm->name, sizeof(vm->name), "gt_%s", Cvar_VariableString("g_gametype") );
 		}
 	} while(retval >= 0);
 	
@@ -989,14 +997,11 @@ VM_VmInfo_f
 ==============
 */
 void VM_VmInfo_f( void ) {
-	vm_t	*vm;
-	int		i;
-
 	Com_Printf( "Registered virtual machines:\n" );
-	for ( i = 0 ; i < MAX_VM ; i++ ) {
-		vm = &vmTable[i];
+	for ( size_t i = 0 ; i < MAX_VM ; i++ ) {
+		const vm_t *vm = &vmTable[i];
 		if ( !vm->name[0] ) {
-			break;
+			continue;
 		}
 		Com_Printf( "%s : ", vm->name );
 		if ( vm->dllHandle ) {

@@ -44,8 +44,6 @@ private:
 	// end of fontdat data
 
 	int				mShader;   				// handle to the shader with the glyph
-	
-	int				m_iLanguageModificationCount;	// doesn't matter what this is, so long as it's comparable as being changed
 
 public:
 	char			m_sFontName[MAX_QPATH];	// eg "fonts/lcd"	// needed for korean font-hint if we need >1 hangul set
@@ -73,17 +71,6 @@ public:
 };
 
 //================================================
-
-
-
-
-// round float to one decimal place...
-//
-float RoundTenth( float fValue )
-{
-	return ( floorf( (fValue*10.0f) + 0.5f) ) / 10.0f;
-}
-
 
 int							g_iCurrentFontIndex;	// entry 0 is reserved index for missing/invalid, else ++ with each new font registered
 std::vector<CFontInfo *>			g_vFontArray;
@@ -228,13 +215,13 @@ const glyphInfo_t *CFontInfo::GetLetter(const unsigned int uiLetter, int *piShad
 const int CFontInfo::GetLetterWidth(unsigned int uiLetter)
 {
 	const glyphInfo_t *pGlyph = GetLetter( uiLetter );
-	return pGlyph->width ? pGlyph->width : mGlyphs[(unsigned)'.'].width;
+	return pGlyph->width ? pGlyph->width : mGlyphs[(int)'.'].width;
 }
 
 const int CFontInfo::GetLetterHorizAdvance(unsigned int uiLetter)
 {
 	const glyphInfo_t *pGlyph = GetLetter( uiLetter );
-	return pGlyph->horizAdvance ? pGlyph->horizAdvance : mGlyphs[(unsigned)'.'].horizAdvance;
+	return pGlyph->horizAdvance ? pGlyph->horizAdvance : mGlyphs[(int)'.'].horizAdvance;
 }
 
 CFontInfo *GetFont(int index)
@@ -309,10 +296,8 @@ int RE_Font_HeightPixels(const int iFontHandle, const float fScale)
 //
 void RE_Font_DrawString(int x, int y, qhandle_t font, float scale, vec4_t color, const char* text, int limit, int flags, int cursorPos, char cursor)
 {
-//	static qboolean gbInShadow = qfalse;	// MUST default to this
 	float				curX, curY;
-//	float				fox, foy, fx, fy;
-	int					colour, offset;
+	int					colour;
 	const glyphInfo_t	*letter;
 	qhandle_t			shader;
 
@@ -398,7 +383,7 @@ void RE_Font_DrawString(int x, int y, qhandle_t font, float scale, vec4_t color,
 			break;
 		}
 	}
-	//let it remember the old color //RE_SetColor(NULL);;
+
 	if (cursor && (ri->Milliseconds() >> 7) & 1) {
 		// draw blinking cursor
 		curX = x;

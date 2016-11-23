@@ -2908,6 +2908,34 @@ void FS_TouchFile_f( void ) {
 
 /*
 ============
+FS_Which
+============
+*/
+
+qboolean FS_Which(const char *filename, void *searchPath)
+{
+	searchpath_t *search = (searchpath_t *)searchPath;
+
+	if(FS_FOpenFileReadDir(filename, search, NULL, qfalse, qfalse) > 0)
+	{
+		if(search->pack)
+		{
+			Com_Printf("File \"%s\" found in \"%s\"\n", filename, search->pack->pakFilename);
+			return qtrue;
+		}
+		else if(search->dir)
+		{
+			Com_Printf( "File \"%s\" found at \"%s\"\n", filename, search->dir->fullpath);
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+
+/*
+============
 FS_Which_f
 ============
 */
@@ -2927,51 +2955,11 @@ void FS_Which_f( void ) {
 		filename++;
 	}
 
-	// make absolutely sure that it can't back up the path.
-	// The searchpaths do guarantee that something will always
-	// be prepended, so we don't need to worry about "c:" or "//limbo"
-	if ( strstr( filename, ".." ) || strstr( filename, "::" ) ) {
-		return;
-	}
-
 	// just wants to see if file is there
-	for ( search=fs_searchpaths; search; search=search->next ) {
-		if ( search->pack ) {
-			long hash = FS_HashFileName( filename, search->pack->hashSize );
-
-			// is the element a pak file?
-			if ( search->pack->hashTable[hash]) {
-				// look through all the pak file elements
-				pack_t* pak = search->pack;
-				fileInPack_t* pakFile = pak->hashTable[hash];
-
-				do {
-					// case and separator insensitive comparisons
-					if ( !FS_FilenameCompare( pakFile->name, filename ) ) {
-						// found it!
-						Com_Printf( "File \"%s\" found in \"%s\"\n", filename, pak->pakFilename );
-						return;
-					}
-
-					pakFile = pakFile->next;
-				} while ( pakFile != NULL );
-			}
-		} else if (search->dir) {
-			directory_t* dir = search->dir;
-
-			char* netpath = FS_BuildOSPath( dir->path, dir->gamedir, filename );
-			FILE* filep = fopen(netpath, "rb");
-
-			if ( filep ) {
-				fclose( filep );
-
-				char buf[MAX_OSPATH];
-				Com_sprintf( buf, sizeof( buf ), "%s%c%s", dir->path, PATH_SEP, dir->gamedir );
-				FS_ReplaceSeparators( buf );
-				Com_Printf( "File \"%s\" found at \"%s\"\n", filename, buf );
-				return;
-			}
-		}
+	for(search = fs_searchpaths; search; search = search->next)
+	{
+		if(FS_Which(filename, search))
+			return;
 	}
 
 	Com_Printf( "File not found: \"%s\"\n", filename );
@@ -3971,7 +3959,7 @@ int		FS_FOpenFileByMode( const char *qpath, fileHandle_t *f, fsMode_t mode ) {
 		}
 		break;
 	default:
-		Com_Error( ERR_FATAL, "FSH_FOpenFile: bad mode" );
+		Com_Error( ERR_FATAL, "FSH_FOpenFile: bad mode: %i", mode );
 		return -1;
 	}
 

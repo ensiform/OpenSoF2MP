@@ -32,7 +32,6 @@ extern IHeapAllocator *G2VertSpaceClient;
 extern botlib_export_t *botlib_export;
 
 // ui interface
-static uiExport_t *uie; // ui export table
 static vm_t *uivm; // ui vm, valid for legacy and new api
 
 //
@@ -835,7 +834,7 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_R_DRAWSTRETCHPIC:
-		re->DrawStretchPic( VMF(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[9] );
+		re->DrawStretchPic( VMF(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[10] );
 		return 0;
 
 	case UI_R_MODELBOUNDS:
@@ -1228,21 +1227,25 @@ Ghoul2 Insert End
 */
 
 	case UI_GP_PARSE:
-		return (intptr_t)GP_Parse((char **) VMA(1), (bool) args[2], (bool) args[3]);
+		return GP_VM_Parse( (char **) VMA(1), (bool) args[2], (bool) args[3] );
+		//return (intptr_t)GP_Parse((char **) VMA(1), (bool) args[2], (bool) args[3]);
 	case UI_GP_PARSE_FILE:
 		{
 			char * data;
 			FS_ReadFile((char *) VMA(1), (void **) &data);
-			return (intptr_t)GP_Parse(&data, (bool) args[2], (bool) args[3]);
+			return GP_VM_Parse( &data, (bool) args[2], (bool) args[3] );
+			//return (intptr_t)GP_Parse(&data, (bool) args[2], (bool) args[3]);
 		}
 	case UI_GP_CLEAN:
-		GP_Clean((TGenericParser2) args[1]);
+		GP_VM_Clean( (qhandle_t *)VMA(1) );
+		//GP_Clean((TGenericParser2) VMA(1));
 		return 0;
 	case UI_GP_DELETE:
-		GP_Delete((TGenericParser2 *) VMA(1));
+		GP_VM_Delete( (qhandle_t *)VMA(1) );
+		//GP_Delete((TGenericParser2 *) VMA(1));
 		return 0;
 	case UI_GP_GET_BASE_PARSE_GROUP:
-		return (intptr_t)GP_GetBaseParseGroup((TGenericParser2) args[1]);
+		return (intptr_t)GP_GetBaseParseGroup((TGenericParser2) VMA(1));
 
 	case UI_VM_LOCALALLOC:
 		return (intptr_t)VM_Local_Alloc(args[1]);
@@ -1264,42 +1267,42 @@ Ghoul2 Insert End
 		return 1;
 
 	case UI_GPG_GET_NAME:
-		return (intptr_t)GPG_GetName((TGPGroup) args[1], (char *) VMA(2));
+		return (intptr_t)GPG_GetName((TGPGroup) VMA(1), (char *) VMA(2));
 	case UI_GPG_GET_NEXT:
-		return (intptr_t)GPG_GetNext((TGPGroup) args[1]);
+		return (intptr_t)GPG_GetNext((TGPGroup) VMA(1));
 	case UI_GPG_GET_INORDER_NEXT:
-		return (intptr_t)GPG_GetInOrderNext((TGPGroup) args[1]);
+		return (intptr_t)GPG_GetInOrderNext((TGPGroup) VMA(1));
 	case UI_GPG_GET_INORDER_PREVIOUS:
-		return (intptr_t)GPG_GetInOrderPrevious((TGPGroup) args[1]);
+		return (intptr_t)GPG_GetInOrderPrevious((TGPGroup) VMA(1));
 	case UI_GPG_GET_PAIRS:
-		return (intptr_t)GPG_GetPairs((TGPGroup) args[1]);
+		return (intptr_t)GPG_GetPairs((TGPGroup) VMA(1));
 	case UI_GPG_GET_INORDER_PAIRS:
-		return (intptr_t)GPG_GetInOrderPairs((TGPGroup) args[1]);
+		return (intptr_t)GPG_GetInOrderPairs((TGPGroup) VMA(1));
 	case UI_GPG_GET_SUBGROUPS:
-		return (intptr_t)GPG_GetSubGroups((TGPGroup) args[1]);
+		return (intptr_t)GPG_GetSubGroups((TGPGroup) VMA(1));
 	case UI_GPG_GET_INORDER_SUBGROUPS:
-		return (intptr_t)GPG_GetInOrderSubGroups((TGPGroup) args[1]);
+		return (intptr_t)GPG_GetInOrderSubGroups((TGPGroup) VMA(1));
 	case UI_GPG_FIND_SUBGROUP:
-		return (intptr_t)GPG_FindSubGroup((TGPGroup) args[1], (char *) VMA(2));
+		return (intptr_t)GPG_FindSubGroup((TGPGroup) VMA(1), (char *) VMA(2));
 	case UI_GPG_FIND_PAIR:
-		return (intptr_t)GPG_FindPair((TGPGroup) args[1], (const char *) VMA(2));
+		return (intptr_t)GPG_FindPair((TGPGroup) VMA(1), (const char *) VMA(2));
 	case UI_GPG_FIND_PAIRVALUE:
-		return (intptr_t)GPG_FindPairValue((TGPGroup) args[1], (const char *) VMA(2), (const char *) VMA(3), (char *) VMA(4));
+		return (intptr_t)GPG_FindPairValue((TGPGroup) VMA(1), (const char *) VMA(2), (const char *) VMA(3), (char *) VMA(4));
 		
 	case UI_GPV_GET_NAME:
-		return (intptr_t)GPV_GetName((TGPValue) args[1], (char *) VMA(2));
+		return (intptr_t)GPV_GetName((TGPValue) VMA(1), (char *) VMA(2));
 	case UI_GPV_GET_NEXT:
-		return (intptr_t)GPV_GetNext((TGPValue) args[1]);
+		return (intptr_t)GPV_GetNext((TGPValue) VMA(1));
 	case UI_GPV_GET_INORDER_NEXT:
-		return (intptr_t)GPV_GetInOrderNext((TGPValue) args[1]);
+		return (intptr_t)GPV_GetInOrderNext((TGPValue) VMA(1));
 	case UI_GPV_GET_INORDER_PREVIOUS:
-		return (intptr_t)GPV_GetInOrderPrevious((TGPValue) args[1]);
+		return (intptr_t)GPV_GetInOrderPrevious((TGPValue) VMA(1));
 
 	case UI_GPV_IS_LIST:
-		return (intptr_t)GPV_IsList((TGPValue) args[1]);
+		return (intptr_t)GPV_IsList((TGPValue) VMA(1));
 	case UI_GPV_GET_TOP_VALUE:
 		{
-			const char * topValue = GPV_GetTopValue((TGPValue) args[1]);
+			const char * topValue = GPV_GetTopValue((TGPValue) VMA(1));
 			if (topValue)
 			{
 				strcpy((char *) VMA(2), topValue);
@@ -1307,7 +1310,7 @@ Ghoul2 Insert End
 			return 0;
 		}
 	case UI_GPV_GET_LIST:
-		return (intptr_t)GPV_GetList((TGPValue) args[1]);
+		return (intptr_t)GPV_GetList((TGPValue) VMA(1));
 
 	case UI_PB_ISENABLED:
 	case UI_PB_ENABLE:

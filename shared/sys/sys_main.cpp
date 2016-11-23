@@ -551,13 +551,13 @@ void Sys_SigHandler( int signal )
 	else
 	{
 		signalcaught = qtrue;
-		//VM_Forced_Unload_Start();
+		VM_Forced_Unload_Start();
 #ifndef DEDICATED
 		CL_Shutdown();
 		//CL_Shutdown(va("Received signal %d", signal), qtrue, qtrue);
 #endif
 		SV_Shutdown(va("Received signal %d", signal) );
-		//VM_Forced_Unload_Done();
+		VM_Forced_Unload_Done();
 	}
 
 	if( signal == SIGTERM || signal == SIGINT )

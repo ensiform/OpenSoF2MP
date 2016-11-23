@@ -194,6 +194,10 @@ void				GP_Clean(TGenericParser2 GP2);
 void				GP_Delete(TGenericParser2 *GP2);
 TGPGroup			GP_GetBaseParseGroup(TGenericParser2 GP2);
 
+int GP_VM_Parse(char **dataPtr, bool cleanFirst, bool writeable);
+void GP_VM_Clean(int *handle);
+void GP_VM_Delete(int *handle);
+
 // CGPGroup (void *) routines
 const char	*GPG_GetName(TGPGroup GPG);
 bool		GPG_GetName(TGPGroup GPG, char *Value);

@@ -781,7 +781,6 @@ static int GoreTouch=1;
 static int GoreIndecies[MAX_GORE_INDECIES];
 
 #define GORE_MARGIN (0.0f)
-int	G2API_GetTime(int argTime);
 
 // now we at poly level, check each model space transformed poly against the model world transfomed ray
 void G2_GorePolys( const mdxmSurface_t *surface, CTraceSurface &TS, const mdxmSurfHierarchy_t *surfInfo)
@@ -959,20 +958,19 @@ void G2_GorePolys( const mdxmSurface_t *surface, CTraceSurface &TS, const mdxmSu
 		add.mDeleteTime=0;
 		if (TS.gore->lifeTime)
 		{
-			add.mDeleteTime=G2API_GetTime(0) + TS.gore->lifeTime;
+			add.mDeleteTime= TS.gore->lifeTime;
 		}
 		add.mFadeTime = TS.gore->fadeOutTime;
-		add.mFadeRGB = !!(TS.gore->fadeRGB);
 		add.mGoreTag = newTag;
 
-		add.mGoreGrowStartTime=G2API_GetTime(0);
+		add.mGoreGrowStartTime=0;
 		if( TS.gore->growDuration == -1)
 		{
 			add.mGoreGrowEndTime = -1;    // set this to -1 to disable growing
 		}
 		else
 		{
-			add.mGoreGrowEndTime = G2API_GetTime(0) + TS.gore->growDuration;
+			add.mGoreGrowEndTime = TS.gore->growDuration;
 		}
 
 		assert(TS.gore->growDuration != 0);

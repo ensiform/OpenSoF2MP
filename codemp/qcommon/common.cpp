@@ -58,7 +58,7 @@ cvar_t	*com_G2Report;
 
 cvar_t	*com_version;
 cvar_t	*com_buildScript;	// for automated data building scripts
-cvar_t	*com_bootlogo;
+//cvar_t	*com_bootlogo;
 cvar_t	*cl_paused;
 cvar_t	*sv_paused;
 cvar_t	*com_cameraMode;
@@ -289,8 +289,10 @@ void NORETURN QDECL Com_Error( int code, const char *fmt, ... ) {
 	if ( code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT || code == ERR_DROP || code == ERR_NEED_CD ) {
 		throw code;
 	} else {
+		VM_Forced_Unload_Start();
 		CL_Shutdown ();
 		SV_Shutdown (va("Server fatal crashed: %s\n", com_errorMessage));
+		VM_Forced_Unload_Done();
 	}
 
 	Com_Shutdown ();
@@ -310,8 +312,14 @@ do the appropriate things.
 void Com_Quit_f( void ) {
 	// don't try to shutdown if we are in a recursive error
 	if ( !com_errorEntered ) {
+		// Some VMs might execute "quit" command directly,
+		// which would trigger an unload of active VM error.
+		// Sys_Quit will kill this process anyways, so
+		// a corrupt call stack makes no difference
+		VM_Forced_Unload_Start();
 		SV_Shutdown ("Server quit\n");
 		CL_Shutdown ();
+		VM_Forced_Unload_Done();
 		Com_Shutdown ();
 		FS_Shutdown(qtrue);
 	}
@@ -1086,9 +1094,11 @@ Handles freeing up of resources when Com_Error is called.
 static void Com_CatchError ( int code )
 {
 	if ( code == ERR_DISCONNECT || code == ERR_SERVERDISCONNECT ) {
+		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server disconnected" );
 		CL_Disconnect( qtrue );
 		CL_FlushMemory(  );
+		VM_Forced_Unload_Done();
 		// make sure we can get at our local stuff
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
@@ -1096,13 +1106,16 @@ static void Com_CatchError ( int code )
 		Com_Printf ("********************\n"
 					"ERROR: %s\n"
 					"********************\n", com_errorMessage);
+		VM_Forced_Unload_Start();
 		SV_Shutdown (va("Server crashed: %s\n",  com_errorMessage));
 		CL_Disconnect( qtrue );
 		CL_FlushMemory( );
+		VM_Forced_Unload_Done();
 		// make sure we can get at our local stuff
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
 	} else if ( code == ERR_NEED_CD ) {
+		VM_Forced_Unload_Start();
 		SV_Shutdown( "Server didn't have CD" );
 		if ( com_cl_running && com_cl_running->integer ) {
 			CL_Disconnect( qtrue );
@@ -1110,6 +1123,7 @@ static void Com_CatchError ( int code )
 		} else {
 			Com_Printf("Server didn't have CD\n" );
 		}
+		VM_Forced_Unload_Done();
 		// make sure we can get at our local stuff
 		FS_PureServerSetLoadedPaks( "", "" );
 		com_errorEntered = qfalse;
@@ -1240,7 +1254,7 @@ void Com_Init( char *commandLine ) {
 		com_affinity = Cvar_Get( "com_affinity", "0", CVAR_ARCHIVE );
 		com_busyWait = Cvar_Get( "com_busyWait", "0", CVAR_ARCHIVE );
 
-		com_bootlogo = Cvar_Get( "com_bootlogo", "1", CVAR_ARCHIVE, "Show intro movies" );
+		//com_bootlogo = Cvar_Get( "com_bootlogo", "1", CVAR_ARCHIVE, "Show intro movies" );
 
 		s = va("%s %s %s", JK_VERSION, PLATFORM_STRING, __DATE__ );
 		com_version = Cvar_Get ("version", s, CVAR_ROM | CVAR_SERVERINFO );
@@ -1273,10 +1287,10 @@ void Com_Init( char *commandLine ) {
 			// if the user didn't give any commands, run default action
 			if ( !com_dedicated->integer )
 			{
-				if ( com_bootlogo->integer )
+				/*if ( com_bootlogo->integer )
 				{
 					Cbuf_AddText ("cinematic openinglogos.roq\n");
-				}
+				}*/
 			}
 		}
 

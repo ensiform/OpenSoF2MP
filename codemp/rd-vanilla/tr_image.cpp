@@ -653,11 +653,11 @@ static void Upload32( unsigned *data,
 		// select proper internal format
 		if ( samples == 3 )
 		{
-			/*if ( glConfig.textureCompression == TC_S3TC && allowTC )
+			if ( glConfigExt.textureCompression == TC_S3TC && allowTC )
 			{
 				*pformat = GL_RGB4_S3TC;
 			}
-			else if ( glConfig.textureCompression == TC_S3TC_DXT && allowTC )
+			else if ( glConfigExt.textureCompression == TC_S3TC_DXT && allowTC )
 			{	// Compress purely color - no alpha
 				if ( r_texturebits->integer == 16 ) {
 					*pformat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;	//this format cuts to 16 bit
@@ -666,7 +666,7 @@ static void Upload32( unsigned *data,
 					*pformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 				}
 			}
-			else*/ if ( isLightmap && r_texturebitslm->integer > 0 )
+			else if ( isLightmap && r_texturebitslm->integer > 0 )
 			{
 				int lmBits = r_texturebitslm->integer & 0x30; // 16 or 32
 				// Allow different bit depth when we are a lightmap

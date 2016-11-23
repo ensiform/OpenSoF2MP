@@ -382,6 +382,9 @@ void			 VM_Shifted_Free( void **ptr );
 void			*VM_ArgPtr( intptr_t intValue );
 void			*VM_ExplicitArgPtr( vm_t *vm, intptr_t intValue );
 
+void	VM_Forced_Unload_Start(void);
+void	VM_Forced_Unload_Done(void);
+
 #define	VMA(x) VM_ArgPtr( args[x] )
 static QINLINE float _vmf(intptr_t x)
 {

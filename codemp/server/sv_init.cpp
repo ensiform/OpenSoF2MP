@@ -929,7 +929,7 @@ void SV_Init (void) {
 	Cvar_Get ("g_forceBasedTeams", "0", CVAR_SERVERINFO);
 	Cvar_Get ("g_duelWeaponDisable", "1", CVAR_SERVERINFO);
 
-	sv_gametype = Cvar_Get ("g_gametype", "0", CVAR_SERVERINFO | CVAR_LATCH, "Server gametype value" );
+	sv_gametype = Cvar_Get ("g_gametype", "dm", CVAR_SERVERINFO | CVAR_LATCH, "Server gametype value" );
 	sv_needpass = Cvar_Get ("g_needpass", "0", CVAR_SERVERINFO | CVAR_ROM, "Server needs password to join" );
 	Cvar_Get ("sv_keywords", "", CVAR_SERVERINFO);
 	Cvar_Get ("protocol", va("%i", PROTOCOL_VERSION), CVAR_SERVERINFO | CVAR_ROM);

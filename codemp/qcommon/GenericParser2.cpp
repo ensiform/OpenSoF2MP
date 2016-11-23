@@ -908,13 +908,86 @@ bool CGenericParser2::Write(CTextPool *textPool)
 	return mTopLevel.Write(&textPool, -1);
 }
 
+#include <set>
+#include <algorithm>
 
+struct gp2entry_t {
+	CGenericParser2 *gp2;
+	qhandle_t handle;
 
+	gp2entry_t(CGenericParser2 *_gp2 = NULL, qhandle_t _handle = 0) : gp2(_gp2), handle(_handle) { }
 
+	bool operator<(const gp2entry_t &rhs) const {
+		return handle < rhs.handle;
+	}
 
+	bool operator==(const gp2entry_t &rhs) const {
+		return (( handle > 0 && rhs.handle > 0 && (handle == rhs.handle) ) || (gp2 && rhs.gp2 && (gp2 == rhs.gp2)));
+	}
+};
 
+std::set<gp2entry_t> gp2table;
 
+qhandle_t currgp2Handle = 1;
 
+// logarithmic complexity
+CGenericParser2 *GetGP2ByHandle(qhandle_t handle) {
+	gp2entry_t ventry(nullptr, handle);
+
+	const auto &it = gp2table.find(ventry);
+	if (it != gp2table.end()) {
+		return it->gp2;
+	}
+
+	return nullptr;
+}
+
+// linear complexity
+qhandle_t GetHandleByGP2(CGenericParser2 *gp2Ref) {
+	const auto &it = std::find( gp2table.begin(), gp2table.end(), gp2Ref);
+	if (it != gp2table.end()) {
+		return it->handle;
+	}
+
+	return NULL_HANDLE;
+}
+
+qhandle_t GP_VM_Parse(char **dataPtr, bool cleanFirst, bool writeable)
+{
+	gp2entry_t entry;
+	CGenericParser2 *parse = new CGenericParser2;
+
+	entry.gp2 = parse;
+	entry.handle = currgp2Handle++;
+	if (parse->Parse(dataPtr, cleanFirst, writeable))
+	{
+		return entry.handle;
+	}
+	delete parse;
+	return 0;
+}
+
+void GP_VM_Clean(qhandle_t *handle)
+{
+	if(!handle)
+		return;
+	CGenericParser2 *gp2 = GetGP2ByHandle(*handle);
+	if(!gp2)
+		return;
+	gp2->Clean();
+	*handle = GetHandleByGP2(gp2);
+}
+
+void GP_VM_Delete(qhandle_t *handle)
+{
+	if(!handle)
+		return;
+	CGenericParser2 *gp2 = GetGP2ByHandle(*handle);
+	if(!gp2)
+		return;
+	delete gp2;
+	*handle = 0;
+}
 
 // The following groups of routines are used for a C interface into GP2.
 // C++ users should just use the objects as normally and not call these routines below

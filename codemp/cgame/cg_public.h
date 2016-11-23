@@ -71,7 +71,7 @@ functions imported from the main executable
 ==================================================================
 */
 
-#define	CGAME_IMPORT_API_VERSION	5
+#define	CGAME_IMPORT_API_VERSION	4
 
 typedef enum cgameImport_e {
 	CG_PRINT = 0,
@@ -270,15 +270,15 @@ typedef enum cgameImport_e {
 	CG_MAT_GET_EFFECT,
 	CG_MAT_GET_DEBRIS,
 	CG_MAT_GET_DEBRIS_SCALE,
-/*
+
 	CG_CM_TM_CREATE,
 	CG_CM_TM_ADDBUILDING,
 	CG_CM_TM_ADDSPOT,
 	CG_CM_TM_ADDTARGET,
 	CG_CM_TM_UPLOAD,
 	CG_CM_TM_CONVERT_POS,
-	//rww - RAGDOLL_END
-*/
+
+	// CGenericParser2 (void *) routines
 	GP_PARSE,
 	GP_PARSE_FILE,
 	GP_CLEAN,
@@ -310,7 +310,7 @@ typedef enum cgameImport_e {
 	CG_RE_INIT_RENDERER_TERRAIN,
 
 	CG_SET_SHARED_BUFFER,
-	//Adding trap to get weather working
+
 	CG_VM_LOCALALLOC,
 	CG_VM_LOCALALLOCUNALIGNED,
 	CG_VM_LOCALTEMPALLOC,

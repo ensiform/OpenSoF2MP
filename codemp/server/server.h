@@ -27,6 +27,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "qcommon/qcommon.h"
 #include "game/g_public.h"
 #include "game/bg_public.h"
+#include "gametype/gt_public.h"
 #include "rd-common/tr_public.h"
 
 //=============================================================================
