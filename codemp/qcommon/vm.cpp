@@ -540,7 +540,7 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 	char filename[MAX_OSPATH];
 	void *startSearch = NULL;
 
-	if ( !systemCalls ) {
+	if ( vmSlot < VM_GAME || vmSlot >= MAX_VM || !systemCalls ) {
 		Com_Error( ERR_FATAL, "VM_Create: bad parms" );
 	}
 	
@@ -590,6 +590,7 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 				break;
 
 			// VM_Free overwrites the name on failed load
+			vm->slot = vmSlot;
 			if ( vm->slot != VM_GAMETYPE )
 				Q_strncpyz( vm->name, vmNames[vmSlot], sizeof(vm->name) );
 			else
@@ -863,6 +864,8 @@ void *VM_ExplicitArgPtr( vm_t *vm, intptr_t intValue ) {
 	// currentVM is missing on reconnect here as well?
 	if ( !currentVM )
 		return NULL;
+
+	assert( vm );
 
 	if ( vm->main ) {
 		return (void *)(vm->dataBase + intValue);
