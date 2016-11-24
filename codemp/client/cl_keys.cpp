@@ -612,6 +612,10 @@ qboolean Key_GetOverstrikeMode( void ) {
 
 
 void Key_SetOverstrikeMode( qboolean state ) {
+	// Fix old mods that set overstrike mode when entering textboxes
+	// And leave it that way, which most people don't like
+	if( state && !kg.keys[K_INS].down )
+		return;
 	kg.key_overstrikeMode = state;
 }
 
