@@ -89,15 +89,6 @@ void IN_MLookUp( void ) {
 	}
 }
 
-void IN_VoiceChatButton(void)
-{
-	if (!cls.uiStarted)
-	{ //ui not loaded so this command is useless
-		return;
-	}
-//	UIVM_SetActiveMenu( UIMENU_VOICECHAT );
-}
-
 void IN_KeyDown( kbutton_t *b ) {
 	int		k;
 	char	*c;
@@ -982,18 +973,26 @@ static const cmdList_t inputCmds[] =
 	{ "-speed", NULL, IN_SpeedUp, NULL },
 	{ "+attack", "Primary Attack", IN_Button0Down, NULL },
 	{ "-attack", NULL, IN_Button0Up, NULL },
+	{ "+lean", "Lean", IN_Button3Down, NULL },
+	{ "-lean", NULL, IN_Button3Up, NULL },
 	{ "+use", "Use item", IN_Button5Down, NULL },
 	{ "-use", NULL, IN_Button5Up, NULL },
-	{ "+force_grip", "Hold to use grip force power", IN_Button6Down, NULL },
-	{ "-force_grip", NULL, IN_Button6Up, NULL },
 	{ "+altattack", "Alternate Attack", IN_Button7Down, NULL },
 	{ "-altattack", NULL, IN_Button7Up, NULL },
-	{ "+useforce", "Use selected force power", IN_Button9Down, NULL },
-	{ "-useforce", NULL, IN_Button9Up, NULL },
-	{ "+force_lightning", "Hold to use lightning force power", IN_Button10Down, NULL },
-	{ "-force_lightning", NULL, IN_Button10Up, NULL },
-	{ "+force_drain", "Hold to use drain force power", IN_Button11Down, NULL },
-	{ "-force_drain", NULL, IN_Button11Up, NULL },
+	{ "+leanleft", "Lean Left", IN_Button13Down, NULL },
+	{ "-leanleft", NULL, IN_Button13Up, NULL },
+	{ "+leanright", "Lean Right", IN_Button12Down, NULL },
+	{ "-leanright", NULL, IN_Button12Up, NULL },
+	{ "+reload", "Reload", IN_Button6Down, NULL },
+	{ "-reload", NULL, IN_Button6Up, NULL },
+	{ "+zoomin", "Zoom In", IN_Button9Down, NULL },
+	{ "-zoomin", NULL, IN_Button9Up, NULL },
+	{ "+zoomout", "Zoom Out", IN_Button10Down, NULL },
+	{ "-zoomout", NULL, IN_Button10Up, NULL },
+	{ "+firemode", "Fire Mode", IN_Button11Down, NULL },
+	{ "-firemode", NULL, IN_Button11Up, NULL },
+	{ "+goggles", "Goggles", IN_Button2Down, NULL },
+	{ "-goggles", NULL, IN_Button2Up, NULL },
 	{ "+button0", "Button 0", IN_Button0Down, NULL },
 	{ "-button0", NULL, IN_Button0Up, NULL },
 	{ "+button1", "Button 1", IN_Button1Down, NULL },
@@ -1028,7 +1027,6 @@ static const cmdList_t inputCmds[] =
 	{ "-button15", NULL, IN_Button15Up, NULL },
 	{ "+mlook", "Hold to use mouse look", IN_MLookDown, NULL },
 	{ "-mlook", NULL, IN_MLookUp, NULL },
-	{ "voicechat", "Open voice chat menu", IN_VoiceChatButton, NULL },
 	{ NULL, NULL, NULL, NULL }
 };
 
