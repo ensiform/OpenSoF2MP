@@ -82,6 +82,10 @@ void UIVM_DrawConnectScreen( qboolean overlay ) {
 	VM_Call( uivm, UI_DRAW_CONNECT_SCREEN, overlay );
 }
 
+void UIVM_DrawLoadingScreen( void ) {
+	VM_Call( uivm, UI_DRAW_LOADING_SCREEN );
+}
+
 //
 // ui syscalls
 //
@@ -342,18 +346,15 @@ intptr_t CL_UISystemCalls( intptr_t *args ) {
 		return 0;
 
 	case UI_UPDATESCREEN:
-		/*if ( args[1] )
+		if ( args[1] )
 		{
 			// draw loading screen
-			VM_Call( uivm, UI_REFRESH, cls.realtime );
-			VM_Call( uivm, UI_DRAW_LOADING_SCREEN );
-			re.BeginFrame( STEREO_CENTER );
-			re.EndFrame( NULL, NULL );
+			SCR_RenderLoadingScreen();
 		}
 		else
-		{*/
+		{
 			SCR_UpdateScreen();
-		//}
+		}
 		return 0;
 
 	case UI_CM_LERPTAG:

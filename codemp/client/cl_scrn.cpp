@@ -492,3 +492,14 @@ void SCR_UpdateScreen( void ) {
 
 	recursive = 0;
 }
+
+void SCR_RenderLoadingScreen( void ) {
+	re->BeginFrame( STEREO_CENTER );
+	UIVM_Refresh( cls.realtime );
+	UIVM_DrawLoadingScreen();
+	if ( com_speeds->integer ) {
+		re->EndFrame( &time_frontend, &time_backend );
+	} else {
+		re->EndFrame( NULL, NULL );
+	}
+}
