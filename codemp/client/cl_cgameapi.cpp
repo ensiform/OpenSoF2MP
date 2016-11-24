@@ -154,7 +154,6 @@ void CGVM_CameraShake( void ) {
 
 //
 // cgame syscalls
-//	only used by legacy mods!
 //
 
 int CM_LoadSubBSP( const char *name, qboolean clientload ); //cm_load.cpp
@@ -187,19 +186,6 @@ static int CL_Milliseconds( void ) {
 	return Sys_Milliseconds();
 }
 
-static void CL_AddReliableCommand2( const char *cmd ) {
-	CL_AddReliableCommand( cmd, qfalse );
-}
-
-static int CL_CM_RegisterTerrain( const char *config ) {
-	return 0;
-}
-
-extern int s_entityWavVol[MAX_GENTITIES];
-static int CL_S_GetVoiceVolume( int entID ) {
-	return s_entityWavVol[entID];
-}
-
 static int CL_GetCurrentCmdNumber( void ) {
 	return cl.cmdNumber;
 }
@@ -208,38 +194,10 @@ static void CGFX_AddLine( vec3_t start, vec3_t end, float size1, float size2, fl
 	FX_AddLine( start, end, size1, size2, sizeParm, alpha1, alpha2, alphaParm, sRGB, eRGB, rgbParm, killTime, shader, flags );
 }
 
-static void CGFX_AddPoly( addpolyArgStruct_t *p ) {
-	FX_AddPoly( p->p, p->ev, p->numVerts, p->vel, p->accel, p->alpha1, p->alpha2, p->alphaParm, p->rgb1, p->rgb2, p->rgbParm, p->rotationDelta, p->bounce, p->motionDelay, p->killTime, p->shader, p->flags );
-}
-
-static void CGFX_AddBezier( addbezierArgStruct_t *b ) {
-	FX_AddBezier( b->start, b->end, b->control1, b->control1Vel, b->control2, b->control2Vel, b->size1, b->size2, b->sizeParm, b->alpha1, b->alpha2, b->alphaParm, b->sRGB, b->eRGB, b->rgbParm, b->killTime, b->shader, b->flags );
-}
-
-static void CGFX_AddPrimitive( effectTrailArgStruct_t *e ) {
-	FX_FeedTrail( e );
-}
-
-static void CGFX_AddSprite( addspriteArgStruct_t *s ) {
-	vec3_t rgb = { 1.0f, 1.0f, 1.0f };
-	FX_AddParticle( s->origin, s->vel, s->accel, s->scale, s->dscale, 0, s->sAlpha, s->eAlpha, 0, rgb, rgb, 0, s->rotation, 0, vec3_origin, vec3_origin, s->bounce, 0, 0, s->life, s->shader, s->flags );
-}
-
-static void CGFX_AddElectricity( addElectricityArgStruct_t *p ) {
-	FX_AddElectricity( p->start, p->end, p->size1, p->size2, p->sizeParm, p->alpha1, p->alpha2, p->alphaParm, p->sRGB, p->eRGB, p->rgbParm, p->chaos, p->killTime, p->shader, p->flags );
-}
-
 static void CL_GetCurrentSnapshotNumber( int *snapshotNumber, int *serverTime ) {
 	*snapshotNumber = cl.snap.messageNum;
 	*serverTime = cl.snap.serverTime;
 }
-
-static void CL_SetClientForceAngle( int time, vec3_t angle ) {
-	cl.cgameViewAngleForceTime = time;
-	VectorCopy(angle, cl.cgameViewAngleForce);
-}
-
-static void CL_RMG_Init( int /* terrainID */, const char * /* terrainInfo */ ) { }
 
 /*static qboolean CGFX_PlayBoltedEffectID( int id, vec3_t org, void *ghoul2, const int boltNum, const int entNum, const int modelNum, int iLooptime, qboolean isRelative ) {
 	if ( !ghoul2 ) return qfalse;
@@ -293,7 +251,7 @@ static qboolean CL_G2API_GetBoltMatrix( void *ghoul2, const int modelIndex, cons
 	return re->G2API_GetBoltMatrix( *((CGhoul2Info_v *)ghoul2), modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale );
 }
 
-static qboolean CL_G2API_GetBoltMatrix_NoReconstruct( void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale ) {
+/*static qboolean CL_G2API_GetBoltMatrix_NoReconstruct( void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale ) {
 	if ( !ghoul2 ) return qfalse;
 	re->G2API_BoltMatrixReconstruction( qfalse );
 	return re->G2API_GetBoltMatrix( *((CGhoul2Info_v *)ghoul2), modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale );
@@ -303,7 +261,7 @@ static qboolean CL_G2API_GetBoltMatrix_NoRecNoRot( void *ghoul2, const int model
 	if ( !ghoul2 ) return qfalse;
 	re->G2API_BoltMatrixSPMethod( qtrue );
 	return re->G2API_GetBoltMatrix( *((CGhoul2Info_v *)ghoul2), modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale );
-}
+}*/
 
 static int CL_G2API_InitGhoul2Model( void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias ) {
 #ifdef _FULL_G2_LEAK_CHECKING
@@ -324,10 +282,10 @@ static void CL_G2API_CollisionDetect( CollisionRecord_t *collRecMap, void* ghoul
 	re->G2API_CollisionDetect( collRecMap, *((CGhoul2Info_v *)ghoul2), angles, position, frameNumber, entNum, rayStart, rayEnd, scale, G2VertSpaceClient, traceFlags, useLod, fRadius );
 }
 
-static void CL_G2API_CollisionDetectCache( CollisionRecord_t *collRecMap, void* ghoul2, const vec3_t angles, const vec3_t position, int frameNumber, int entNum, vec3_t rayStart, vec3_t rayEnd, vec3_t scale, int traceFlags, int useLod, float fRadius ) {
+/*static void CL_G2API_CollisionDetectCache( CollisionRecord_t *collRecMap, void* ghoul2, const vec3_t angles, const vec3_t position, int frameNumber, int entNum, vec3_t rayStart, vec3_t rayEnd, vec3_t scale, int traceFlags, int useLod, float fRadius ) {
 	if ( !ghoul2 ) return;
 	re->G2API_CollisionDetectCache( collRecMap, *((CGhoul2Info_v *)ghoul2), angles, position, frameNumber, entNum, rayStart, rayEnd, scale, G2VertSpaceClient, traceFlags, useLod, fRadius );
-}
+}*/
 
 static void CL_G2API_CleanGhoul2Models( void **ghoul2Ptr ) {
 #ifdef _FULL_G2_LEAK_CHECKING
@@ -394,9 +352,9 @@ static void CL_G2API_DuplicateGhoul2Instance( void *g2From, void **g2To ) {
 	re->G2API_DuplicateGhoul2Instance( *((CGhoul2Info_v *)g2From), (CGhoul2Info_v **)g2To );
 }
 
-static qboolean CL_G2API_HasGhoul2ModelOnIndex( void *ghlInfo, int modelIndex ) {
+/*static qboolean CL_G2API_HasGhoul2ModelOnIndex( void *ghlInfo, int modelIndex ) {
 	return re->G2API_HasGhoul2ModelOnIndex( (CGhoul2Info_v **)ghlInfo, modelIndex );
-}
+}*/
 
 static qboolean CL_G2API_RemoveGhoul2Model( void *ghlInfo, int modelIndex ) {
 #ifdef _FULL_G2_LEAK_CHECKING
@@ -427,11 +385,6 @@ static void CL_G2API_ClearSkinGore( void *ghlInfo ) {
 	if ( !ghlInfo ) return;
 	re->G2API_ClearSkinGore( *((CGhoul2Info_v *)ghlInfo) );
 #endif
-}
-
-static int CL_G2API_Ghoul2Size( void *ghlInfo ) {
-	if ( !ghlInfo ) return 0;
-	return re->G2API_Ghoul2Size( *((CGhoul2Info_v *)ghlInfo) );
 }
 
 static int CL_G2API_AddBolt( void *ghoul2, int modelIndex, const char *boneName ) {
@@ -469,157 +422,9 @@ static qboolean CL_G2API_SetNewOrigin( void *ghoul2, int modelIndex, const int b
 	return re->G2API_SetNewOrigin( g2, modelIndex, boltIndex );
 }
 
-static qboolean CL_G2API_DoesBoneExist( void *ghoul2, int modelIndex, const char *boneName ) {
-	if ( !ghoul2 ) return qfalse;
-	CGhoul2Info_v &g2 = *((CGhoul2Info_v *)ghoul2);
-	CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, modelIndex);
-	return re->G2API_DoesBoneExist( ghlinfo, boneName );
-}
-
-static int CL_G2API_GetSurfaceRenderStatus( void *ghoul2, const int modelIndex, const char *surfaceName ) {
-	if ( !ghoul2 ) return -1;
-	CGhoul2Info_v &g2 = *((CGhoul2Info_v *)ghoul2);
-	CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, modelIndex);
-	return re->G2API_GetSurfaceRenderStatus( ghlinfo, surfaceName );
-}
-
-static void CL_G2API_AbsurdSmoothing( void *ghoul2, qboolean status ) {
-	if ( !ghoul2 ) return;
-	CGhoul2Info_v &g2 = *((CGhoul2Info_v *)ghoul2);
-	re->G2API_AbsurdSmoothing( g2, status );
-}
-
-static void CL_G2API_SetRagDoll( void *ghoul2, sharedRagDollParams_t *params ) {
-	if ( !ghoul2 ) return;
-
-	CRagDollParams rdParams;
-	if ( !params ) {
-		re->G2API_ResetRagDoll( *((CGhoul2Info_v *)ghoul2) );
-		return;
-	}
-
-	VectorCopy( params->angles, rdParams.angles );
-	VectorCopy( params->position, rdParams.position );
-	VectorCopy( params->scale, rdParams.scale );
-	VectorCopy( params->pelvisAnglesOffset, rdParams.pelvisAnglesOffset );
-	VectorCopy( params->pelvisPositionOffset, rdParams.pelvisPositionOffset );
-
-	rdParams.fImpactStrength = params->fImpactStrength;
-	rdParams.fShotStrength = params->fShotStrength;
-	rdParams.me = params->me;
-
-	rdParams.startFrame = params->startFrame;
-	rdParams.endFrame = params->endFrame;
-
-	rdParams.collisionType = params->collisionType;
-	rdParams.CallRagDollBegin = params->CallRagDollBegin;
-
-	rdParams.RagPhase = (CRagDollParams::ERagPhase)params->RagPhase;
-	rdParams.effectorsToTurnOff = (CRagDollParams::ERagEffector)params->effectorsToTurnOff;
-
-	re->G2API_SetRagDoll( *((CGhoul2Info_v *)ghoul2), &rdParams );
-}
-
-static void CL_G2API_AnimateG2Models( void *ghoul2, int time, sharedRagDollUpdateParams_t *params ) {
-	if ( !ghoul2 ) return;
-	if ( !params ) return;
-
-	CRagDollUpdateParams rduParams;
-	VectorCopy( params->angles, rduParams.angles );
-	VectorCopy( params->position, rduParams.position );
-	VectorCopy( params->scale, rduParams.scale );
-	VectorCopy( params->velocity, rduParams.velocity );
-
-	rduParams.me = params->me;
-	rduParams.settleFrame = params->settleFrame;
-
-	re->G2API_AnimateG2ModelsRag( *((CGhoul2Info_v *)ghoul2), time, &rduParams );
-}
-
-static qboolean CL_G2API_RagPCJConstraint( void *ghoul2, const char *boneName, vec3_t min, vec3_t max ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_RagPCJConstraint( *((CGhoul2Info_v *)ghoul2), boneName, min, max );
-}
-
-static qboolean CL_G2API_RagPCJGradientSpeed( void *ghoul2, const char *boneName, const float speed ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_RagPCJGradientSpeed( *((CGhoul2Info_v *)ghoul2), boneName, speed );
-}
-
-static qboolean CL_G2API_RagEffectorGoal( void *ghoul2, const char *boneName, vec3_t pos ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_RagEffectorGoal( *((CGhoul2Info_v *)ghoul2), boneName, pos );
-}
-
-static qboolean CL_G2API_GetRagBonePos( void *ghoul2, const char *boneName, vec3_t pos, vec3_t entAngles, vec3_t entPos, vec3_t entScale ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_GetRagBonePos( *((CGhoul2Info_v *)ghoul2), boneName, pos, entAngles, entPos, entScale );
-}
-
-static qboolean CL_G2API_RagEffectorKick( void *ghoul2, const char *boneName, vec3_t velocity ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_RagEffectorKick( *((CGhoul2Info_v *)ghoul2), boneName, velocity );
-}
-
-static qboolean CL_G2API_RagForceSolve( void *ghoul2, qboolean force ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_RagForceSolve( *((CGhoul2Info_v *)ghoul2), force );
-}
-
-static qboolean CL_G2API_SetBoneIKState( void *ghoul2, int time, const char *boneName, int ikState, sharedSetBoneIKStateParams_t *params ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_SetBoneIKState( *((CGhoul2Info_v *)ghoul2), time, boneName, ikState, params );
-}
-
-static qboolean CL_G2API_IKMove( void *ghoul2, int time, sharedIKMoveParams_t *params ) {
-	if ( !ghoul2 ) return qfalse;
-	return re->G2API_IKMove( *((CGhoul2Info_v *)ghoul2), time, params );
-}
-
-static qboolean CL_G2API_RemoveBone( void *ghoul2, const char *boneName, int modelIndex ) {
-	if ( !ghoul2 ) return qfalse;
-	CGhoul2Info_v &g2 = *((CGhoul2Info_v *)ghoul2);
-	CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, modelIndex);
-	return re->G2API_RemoveBone( ghlinfo, boneName );
-}
-
-static void CL_G2API_AttachInstanceToEntNum( void *ghoul2, int entityNum, qboolean server ) {
-	if ( !ghoul2 ) return;
-	re->G2API_AttachInstanceToEntNum( *((CGhoul2Info_v *)ghoul2), entityNum, server );
-}
-
-static void CL_G2API_ClearAttachedInstance( int entityNum ) {
-	re->G2API_ClearAttachedInstance( entityNum );
-}
-
-static void CL_G2API_CleanEntAttachments( void ) {
-	re->G2API_CleanEntAttachments();
-}
-
-/*static qboolean CL_G2API_OverrideServer( void *serverInstance ) {
-	if ( !serverInstance ) return qfalse;
-	CGhoul2Info_v &g2 = *((CGhoul2Info_v *)serverInstance);
-	return re->G2API_OverrideServerWithClientData( g2 );
-}
-
-static void CL_G2API_GetSurfaceName( void *ghoul2, int surfNumber, int modelIndex, char *fillBuf ) {
-	if ( !ghoul2 ) return;
-	CGhoul2Info_v &g2 = *((CGhoul2Info_v *)ghoul2);
-	char *tmp = re->G2API_GetSurfaceName( g2, modelIndex, surfNumber );
-	strcpy( fillBuf, tmp );
-}*/
-
 static void CL_Key_SetCatcher( int catcher ) {
 	// Don't allow the cgame module to close the console
 	Key_SetCatcher( catcher | ( Key_GetCatcher( ) & KEYCATCH_CONSOLE ) );
-}
-
-static void CGVM_Cvar_Set( const char *var_name, const char *value ) {
-	Cvar_VM_Set( var_name, value, VM_CGAME );
-}
-
-static void CGVM_Cmd_RemoveCommand( const char *cmd_name ) {
-	Cmd_VM_RemoveCommand( cmd_name, VM_CGAME );
 }
 
 // legacy syscall
@@ -751,7 +556,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case CG_SENDCLIENTCOMMAND:
-		CL_AddReliableCommand2( (const char *)VMA(1) );
+		CL_AddReliableCommand( (const char *)VMA(1), qfalse );
 		return 0;
 
 	case CG_UPDATESCREEN:
@@ -1423,7 +1228,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case CG_AS_ADDLOCALSET:
-		//SOF2 TODO
+		return S_AddLocalSet( (const char *)VMA(1), (float *)VMA(2), (float *)VMA(3), args[4], args[5] );
 		return 0;
 
 	case CG_G2_GETNUMMODELS:
@@ -1439,9 +1244,6 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 	}
 	return 0;
 }
-
-// Stub function for old RMG system.
-static void RE_InitRendererTerrain ( const char * /*info*/ ) {}
 
 void CL_BindCGame( void ) {
 	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, VMI_COMPILED );
