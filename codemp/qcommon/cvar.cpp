@@ -818,10 +818,12 @@ void Cvar_VM_SetValue( const char *var_name, float value, vmSlots_t vmslot ) {
 		if( !Q_stricmp( var_name, "r_texturemode") )
 		{
 			Cvar_VM_Set (var_name, Cvar_VariableString("r_texturemode_store"), vmslot);
+			return;
 		}
 		else if( !Q_stricmp( var_name, "r_texturemode_store") )
 		{
 			Cvar_VM_Set (var_name, Cvar_VariableString("r_texturemode"), vmslot);
+			return;
 		}
 	}
 
