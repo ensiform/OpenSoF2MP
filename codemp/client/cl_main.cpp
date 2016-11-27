@@ -367,6 +367,9 @@ void CL_Record_f( void ) {
 	// Filler for old RMG system.
 	MSG_WriteShort ( &buf, 0 );
 
+	//SOF2 TODO
+	MSG_WriteLong ( &buf, 0 );
+
 	// finished writing the client packet
 	MSG_WriteByte( &buf, svc_EOF );
 
