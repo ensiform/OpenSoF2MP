@@ -812,6 +812,19 @@ Cvar_VM_SetValue
 void Cvar_VM_SetValue( const char *var_name, float value, vmSlots_t vmslot ) {
 	char	val[32];
 
+	// Hack to stop the original mod from setting r_textureMode[_store] to 0
+	if( vmslot == VM_UI )
+	{
+		if( !Q_stricmp( var_name, "r_texturemode") )
+		{
+			Cvar_VM_Set (var_name, Cvar_VariableString("r_texturemode_store"), vmslot);
+		}
+		else if( !Q_stricmp( var_name, "r_texturemode_store") )
+		{
+			Cvar_VM_Set (var_name, Cvar_VariableString("r_texturemode"), vmslot);
+		}
+	}
+
 	if( Q_isintegral( value ) )
 		Com_sprintf (val, sizeof(val), "%i", (int)value);
 	else
