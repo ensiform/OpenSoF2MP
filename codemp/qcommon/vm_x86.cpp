@@ -1062,6 +1062,34 @@ qboolean ConstOptimize(vm_t *vm, int callProcOfsSyscall)
 	return qfalse;
 }
 
+#if defined(idx64)
+  #define EAX "%%rax"
+  #define EBX "%%rbx"
+  #define ESP "%%rsp"
+  #define EDI "%%rdi"
+#else
+  #define EAX "%%eax"
+  #define EBX "%%ebx"
+  #define ESP "%%esp"
+  #define EDI "%%edi"
+#endif
+
+int qvmftolsse(void)
+{
+  int retval;
+  
+  __asm__ volatile
+  (
+    "movss (" EDI ", " EBX ", 4), %%xmm0\n"
+    "cvttss2si %%xmm0, %0\n"
+    : "=r" (retval)
+    :
+    : "%xmm0"
+  );
+  
+  return retval;
+}
+
 /*
 =================
 VM_Compile
@@ -1596,7 +1624,7 @@ void VM_Compile(vm_t *vm, vmHeader_t *header)
 #else // FTOL_PTR
 			// call the library conversion function
 			EmitRexString(0x48, "BA");			// mov edx, Q_VMftol
-			EmitPtr((void*)Q_ftol);
+			EmitPtr((void*)qvmftolsse);
 			//EmitPtr(Q_VMftol);
 			EmitRexString(0x48, "FF D2");			// call edx
 			EmitCommand(LAST_COMMAND_MOV_STACK_EAX);	// mov dword ptr [edi + ebx * 4], eax
