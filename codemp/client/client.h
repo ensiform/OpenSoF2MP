@@ -272,6 +272,7 @@ typedef struct serverInfo_s {
 	int			ping;
 	qboolean	visible;
 	qboolean	needPassword;
+	qboolean	punkbuster;
 	int			humans, bots;
 } serverInfo_t;
 

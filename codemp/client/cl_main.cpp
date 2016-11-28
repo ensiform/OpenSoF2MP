@@ -2774,6 +2774,7 @@ static void CL_SetServerInfo(serverInfo_t *server, const char *info, int ping) {
 			server->maxPing = atoi(Info_ValueForKey(info, "maxping"));
 //			server->allowAnonymous = atoi(Info_ValueForKey(info, "sv_allowAnonymous"));
 			server->needPassword = (qboolean)atoi(Info_ValueForKey(info, "needpass" ));
+			server->punkbuster = (qboolean)atoi(Info_ValueForKey(info, "punkbuster" ));
 			server->humans = atoi( Info_ValueForKey( info, "g_humanplayers" ) );
 			server->bots = atoi( Info_ValueForKey( info, "bots" ) );
 //			server->pure = (qboolean)atoi(Info_ValueForKey(info, "pure" ));

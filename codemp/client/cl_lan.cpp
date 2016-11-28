@@ -310,6 +310,7 @@ void LAN_GetServerInfo( int source, int n, char *buf, int buflen ) {
 		Info_SetValueForKey( info, "maxping", va("%i",server->maxPing));
 		Info_SetValueForKey( info, "nettype", va("%i",server->netType));
 		Info_SetValueForKey( info, "needpass", va("%i", server->needPassword ) );
+		Info_SetValueForKey( info, "sv_punkbuster", va("%i", server->punkbuster ) );
 		Info_SetValueForKey( info, "game", server->game);
 		Info_SetValueForKey( info, "gametype", server->gameType);
 		Info_SetValueForKey( info, "addr", NET_AdrToString(server->adr));
