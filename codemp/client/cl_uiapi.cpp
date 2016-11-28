@@ -860,7 +860,16 @@ Ghoul2 Insert End
 }
 
 void CL_BindUI( void ) {
-	uivm = VM_Create( VM_UI, CL_UISystemCalls, VMI_COMPILED );
+	// load the dll or bytecode
+	vmInterpret_t interpret = (vmInterpret_t)Cvar_VariableValue("vm_ui");
+	if(cl_connectedToPureServer)
+	{
+		// if sv_pure is set we only allow qvms to be loaded
+		if(interpret != VMI_COMPILED && interpret != VMI_BYTECODE)
+			interpret = VMI_COMPILED;
+	}
+
+	uivm = VM_Create( VM_UI, CL_UISystemCalls, interpret );
 	if ( !uivm ) {
 		cls.uiStarted = qfalse;
 		Com_Error( ERR_DROP, "VM_Create on ui failed" );

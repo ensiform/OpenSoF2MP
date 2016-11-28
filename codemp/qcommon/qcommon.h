@@ -368,7 +368,7 @@ void			VM_Init( void );
 vm_t			*VM_Create( vmSlots_t vmSlot, intptr_t (*systemCalls)(intptr_t *), vmInterpret_t interpret );
 void			 VM_Free( vm_t *vm );
 void			 VM_Clear(void);
-vm_t			*VM_Restart( vm_t *vm );
+vm_t			*VM_Restart( vm_t *vm, qboolean unpure );
 intptr_t QDECL	 VM_Call( vm_t *vm, int callNum, intptr_t arg0 = 0, intptr_t arg1 = 0, intptr_t arg2 = 0, intptr_t arg3 = 0, intptr_t arg4 = 0, intptr_t arg5 = 0, intptr_t arg6 = 0, intptr_t arg7 = 0, intptr_t arg8 = 0, intptr_t arg9 = 0, intptr_t arg10 = 0, intptr_t arg11 = 0 );
 void	*VM_Shift(void * mem);
 void	*VM_Local_Alloc(int size);

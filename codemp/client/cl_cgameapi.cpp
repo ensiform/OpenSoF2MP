@@ -1267,7 +1267,16 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 }
 
 void CL_BindCGame( void ) {
-	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, VMI_COMPILED );
+	// load the dll or bytecode
+	vmInterpret_t interpret = (vmInterpret_t)Cvar_VariableValue("vm_cgame");
+	if(cl_connectedToPureServer)
+	{
+		// if sv_pure is set we only allow qvms to be loaded
+		if(interpret != VMI_COMPILED && interpret != VMI_BYTECODE)
+			interpret = VMI_COMPILED;
+	}
+
+	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, interpret );
 	if ( !cgvm ) {
 		cls.cgameStarted = qfalse;
 		Com_Error( ERR_DROP, "VM_Create on cgame failed" );

@@ -1185,7 +1185,7 @@ void SV_InitGame( qboolean restart ) {
 }
 
 void SV_BindGame( void ) {
-	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, VMI_COMPILED );
+	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, (vmInterpret_t)Cvar_VariableValue( "vm_game" ) );
 	if ( !gvm ) {
 		svs.gameStarted = qfalse;
 		Com_Error( ERR_DROP, "VM_Create on game failed" );
@@ -1201,7 +1201,7 @@ void SV_UnbindGame( void ) {
 void SV_RestartGame( void ) {
 	GVM_ShutdownGame( qtrue );
 
-	gvm = VM_Restart( gvm );
+	gvm = VM_Restart( gvm, qtrue );
 	SV_BindGame();
 	if ( !gvm ) {
 		svs.gameStarted = qfalse;

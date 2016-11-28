@@ -76,10 +76,14 @@ void VM_VmInfo_f( void );
 void VM_VmProfile_f( void );
 
 void VM_Init( void ) {
-	Cvar_Get( "vm_cgame", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
-	Cvar_Get( "vm_game", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
-	Cvar_Get( "vm_gametype", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
-	Cvar_Get( "vm_ui", "2", CVAR_ARCHIVE );		// !@# SHIP WITH SET TO 2
+	cvar_t *temp = Cvar_Get( "vm_cgame", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
+	Cvar_CheckRange( temp, (int)VMI_NATIVE, (int)VMI_COMPILED, qtrue );
+	temp = Cvar_Get( "vm_game", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
+	Cvar_CheckRange( temp, (int)VMI_NATIVE, (int)VMI_COMPILED, qtrue );
+	//temp = Cvar_Get( "vm_gametype", "2", CVAR_ARCHIVE );	// !@# SHIP WITH SET TO 2
+	//Cvar_CheckRange( temp, (int)VMI_NATIVE, (int)VMI_COMPILED, qtrue );
+	temp = Cvar_Get( "vm_ui", "2", CVAR_ARCHIVE );		// !@# SHIP WITH SET TO 2
+	Cvar_CheckRange( temp, (int)VMI_NATIVE, (int)VMI_COMPILED, qtrue );
 
 	Cmd_AddCommand ("vmprofile", VM_VmProfile_f );
 	Cmd_AddCommand ("vminfo", VM_VmInfo_f );
@@ -506,7 +510,7 @@ vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc, qboolean unpure)
 
 // We need to make sure that servers can access unpure QVMs (not contained in any pak)
 // even if the client is pure, so take "unpure" as argument.
-vm_t *VM_Restart( vm_t *vm/*, qboolean unpure=qfalse*/ ) {
+vm_t *VM_Restart( vm_t *vm, qboolean unpure ) {
 	// DLL's can't be restarted in place
 	if ( vm->dllHandle ) {
 		const vm_t saved = *vm;
@@ -519,7 +523,7 @@ vm_t *VM_Restart( vm_t *vm/*, qboolean unpure=qfalse*/ ) {
 	// load the image
 	Com_Printf("VM_Restart()\n");
 
-	if(!(header = VM_LoadQVM(vm, qfalse, qfalse/*unpure*/)))
+	if(!(header = VM_LoadQVM(vm, qfalse, unpure)))
 	{
 		Com_Error(ERR_DROP, "VM_Restart failed");
 		return NULL;
@@ -568,7 +572,7 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 		{
 			Com_Printf("Try loading dll file %s\n", filename);
 
-			vm->dllHandle = Sys_LoadGameDll(filename, &vm->main, VM_DllSyscall);
+			vm->dllHandle = Sys_LoadGameDll(vm->name, &vm->main, VM_DllSyscall);
 			
 			if(vm->dllHandle)
 			{
@@ -640,7 +644,7 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 	vm->programStack = vm->dataMask + 1;
 	vm->stackBottom = vm->programStack - PROGRAM_STACK_SIZE;
 
-	Com_Printf("%s loaded in %d bytes on the hunk\n", vmNames[vmSlot], (Z_MemSize(TAG_HUNK_MARK1)+Z_MemSize(TAG_HUNK_MARK2)) - remaining);
+	Com_Printf("%s loaded in %d bytes on the hunk\n", vm->name, (Z_MemSize(TAG_HUNK_MARK1)+Z_MemSize(TAG_HUNK_MARK2)) - remaining);
 
 	return vm;
 }
@@ -779,60 +783,6 @@ char *VM_Local_StringAlloc ( const char *source )
 	return dest;
 }
 
-void VM_Shifted_Alloc( void **ptr, int size ) {
-	void *mem = NULL;
-
-	if ( !currentVM ) {
-		assert( 0 );
-		*ptr = NULL;
-		return;
-	}
-
-	mem = Z_Malloc( size + 1, TAG_VM_ALLOCATED, qfalse );
-	if ( !mem ) {
-		assert( 0 );
-		*ptr = NULL;
-		return;
-	}
-
-	memset( mem, 0, size + 1 );
-
-	//This can happen.. if a free chunk of memory is found before the vm alloc pointer, commonly happens
-	//when allocating like 4 bytes or whatever. However it seems to actually be handled which I didn't
-	//think it would be.. so hey.
-#if 0
-	if ((int)mem < (int)currentVM->dataBase)
-	{
-		assert(!"Unspeakably bad thing has occured (mem ptr < vm base ptr)");
-		*ptr = NULL;
-		return;
-	}
-#endif
-
-	//Alright, subtract the database from the memory pointer to get a memory address relative to the VM.
-	//When the VM modifies it it should be modifying the same chunk of memory we have allocated in the engine.
-	*ptr = (void *)((intptr_t)mem - (intptr_t)currentVM->dataBase);
-}
-
-void VM_Shifted_Free( void **ptr ) {
-	void *mem = NULL;
-
-	if ( !currentVM ) {
-		assert( 0 );
-		return;
-	}
-
-	//Shift the VM memory pointer back to get the same pointer we initially allocated in real memory space.
-	mem = (void *)((intptr_t)currentVM->dataBase + (intptr_t)*ptr);
-	if ( !mem ) {
-		assert( 0 );
-		return;
-	}
-
-	Z_Free( mem );
-	*ptr = NULL; //go ahead and clear the pointer for the game.
-}
-
 void VM_Forced_Unload_Start(void) {
 	forced_unload = 1;
 }
@@ -968,7 +918,7 @@ void VM_VmProfile_f( void ) {
 		return;
 	}
 
-	sorted = (vmSymbol_t **)Z_Malloc( vm->numSymbols * sizeof( *sorted ), qfalse );
+	sorted = (vmSymbol_t **)Z_Malloc( vm->numSymbols * sizeof( *sorted ), TAG_VM, qfalse );
 	sorted[0] = vm->symbols;
 	total = sorted[0]->profileCount;
 	for ( i = 1 ; i < vm->numSymbols ; i++ ) {
