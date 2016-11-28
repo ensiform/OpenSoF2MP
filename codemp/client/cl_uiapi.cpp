@@ -26,6 +26,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "FXExport.h"
 #include "FxUtil.h"
 
+#include "ghoul2/ghoul2_shared.h"
+
 #include "qcommon/GenericParser2.h"
 
 extern IHeapAllocator *G2VertSpaceClient;
