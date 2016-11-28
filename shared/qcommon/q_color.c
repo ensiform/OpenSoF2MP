@@ -1,9 +1,9 @@
 #include "q_color.h"
 
 vec4_t		colorBlack	= {0, 0, 0, 1};
-vec4_t		colorRed	= {1, 0, 0, 1};
-vec4_t		colorGreen	= {0, 1, 0, 1};
-vec4_t		colorBlue	= {0, 0, 1, 1};
+vec4_t		colorRed	= {1, 0.1f, 0.1f, 1};
+vec4_t		colorGreen	= { 169.0f/255.0f, 194.0f/255.0f, 116.0f/255.0f, 1.0 };
+vec4_t		colorBlue	= {0.3f, 0.3f, 1, 1};
 vec4_t		colorYellow	= {1, 1, 0, 1};
 vec4_t		colorOrange = {1, 0.5, 0, 1};
 vec4_t		colorMagenta= {1, 0, 1, 1};
@@ -18,10 +18,13 @@ vec4_t		colorDkBlue	= {0.199f, 0.0f,   0.398f, 1};
 
 vec4_t g_color_table[Q_COLOR_BITS+1] = {
 	{ 0.0, 0.0, 0.0, 1.0 },	// black
-	{ 1.0, 0.0, 0.0, 1.0 },	// red
-	{ 0.0, 1.0, 0.0, 1.0 },	// green
+	//{ 1.0, 0.0, 0.0, 1.0 },	// red
+	{ 1.0, 0.1f, 0.1f, 1.0 },	// red
+	{ 169.0f/255.0f, 194.0f/255.0f, 116.0f/255.0f, 1.0 },	// green
+	//{ 0.0, 1.0, 0.0, 1.0 },	// green
 	{ 1.0, 1.0, 0.0, 1.0 },	// yellow
-	{ 0.0, 0.0, 1.0, 1.0 },	// blue
+	{ 0.3f, 0.3f, 1.0, 1.0 },	// blue
+	//{ 0.0, 0.0, 1.0, 1.0 },	// blue
 	{ 0.0, 1.0, 1.0, 1.0 },	// cyan
 	{ 1.0, 0.0, 1.0, 1.0 },	// magenta
 	{ 1.0, 1.0, 1.0, 1.0 },	// white
