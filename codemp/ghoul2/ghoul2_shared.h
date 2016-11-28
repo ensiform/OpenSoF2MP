@@ -299,5 +299,12 @@ enum EG2_Collision
 	G2_RETURNONHIT
 };
 
+CGhoul2Info_v *GetGhoul2InfovByHandle(qhandle_t handle);
+
+#if id386
+#	define GhoulHandle(x) ((CGhoul2Info_v *)x)
+#else
+#	define GhoulHandle(x) re->GetGhoul2InfovByHandle(x)
+#endif
 
 //====================================================================

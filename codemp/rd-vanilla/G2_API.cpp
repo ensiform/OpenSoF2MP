@@ -29,6 +29,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 #include <set>
 #include <list>
+#include <algorithm>
 
 #ifdef _FULL_G2_LEAK_CHECKING
 int g_Ghoul2Allocations = 0;
@@ -147,6 +148,60 @@ void G2_DEBUG_RemovePtrFromTracker(CGhoul2Info_v *g2)
 	}
 }
 #endif
+
+// normally a ghoul2 handle is a 4 byte pointer directly to CGhoul2Info_v*
+// which is saved and used inside the VM, but on 64 bit we have 8 byte pointers (can't be stored inside int32_t^^)
+// solution is to use it as an actual handle and save them in the (already there anyway) table
+
+struct ghoul2entry_t {
+	CGhoul2Info_v *ghoul2info;
+	qhandle_t handle;
+
+	ghoul2entry_t(CGhoul2Info_v *ghoul2info = NULL, qhandle_t handle = 0) : ghoul2info(ghoul2info), handle(handle) { }
+
+	bool operator<(const ghoul2entry_t &rhs) const {
+		return handle < rhs.handle;
+	}
+
+	bool operator==(const ghoul2entry_t &rhs) const {
+		return (( handle > 0 && rhs.handle > 0 && (handle == rhs.handle) ) || (ghoul2info && rhs.ghoul2info && (ghoul2info == rhs.ghoul2info)));
+	}
+};
+
+std::set<ghoul2entry_t> ghoultable[2];
+qhandle_t currghoul2Handle = 1;
+
+// logarithmic complexity
+CGhoul2Info_v *GetGhoul2InfovByHandle(qhandle_t handle) {
+	ghoul2entry_t ventry(nullptr, handle);
+
+	std::set<ghoul2entry_t>::iterator i = ghoultable[0].find(ventry);
+	if (i != ghoultable[0].end()) {
+		return i->ghoul2info;
+	}/* else {
+		i = ghoultable[1].find(ventry);
+		if (i != ghoultable[1].end()) {
+			return i->ghoul2info;
+		}
+	}*/
+
+	return nullptr;
+}
+
+// linear complexity
+qhandle_t GetHandleByGhoul2Infov(CGhoul2Info_v *ghoul2inf) {
+	std::set<ghoul2entry_t>::iterator i = std::find(ghoultable[0].begin(), ghoultable[0].end(), ghoul2inf);
+	if (i != ghoultable[0].end()) {
+		return i->handle;
+	}/* else {
+		i = std::find(ghoultable[1].begin(), ghoultable[1].end(), ghoul2inf);
+		if (i != ghoultable[1].end()) {
+			return i->handle;
+		}
+	}*/
+
+	return 0;
+}
 
 qboolean G2_SetupModelPointers(CGhoul2Info *ghlInfo);
 qboolean G2_SetupModelPointers(CGhoul2Info_v &ghoul2);
@@ -665,53 +720,20 @@ void Ghoul2InfoArray_Free(void)
 }
 
 // this is the ONLY function to read entity states directly
+void G2API_VM_CleanGhoul2Models(qhandle_t *handle) {
+	CGhoul2Info_v *ghoul2Ptr;
+
+	ghoul2Ptr = GetGhoul2InfovByHandle(*handle);
+	G2API_CleanGhoul2Models(&ghoul2Ptr);
+	*handle = GetHandleByGhoul2Infov(ghoul2Ptr);
+}
+
+// this is the ONLY function to read entity states directly
 void G2API_CleanGhoul2Models(CGhoul2Info_v **ghoul2Ptr)
 {
 	if (*ghoul2Ptr)
 	{
 		CGhoul2Info_v &ghoul2 = *(*ghoul2Ptr);
-
-#if 0 //rwwFIXMEFIXME: Disable this before release!!!!!! I am just trying to find a crash bug.
-		extern int R_GetRNumEntities(void);
-		extern void R_SetRNumEntities(int num);
-		//check if this instance is actually on a refentity
-		int i = 0;
-		int r = R_GetRNumEntities();
-
-		while (i < r)
-		{
-			if ((CGhoul2Info_v *)backEndData->entities[i].e.ghoul2 == *ghoul2Ptr)
-			{
-				char fName[MAX_QPATH];
-				char mName[MAX_QPATH];
-
-				if (ghoul2[0].currentModel)
-				{
-					strcpy(mName, ghoul2[0].currentModel->name);
-				}
-				else
-				{
-					strcpy(mName, "NULL!");
-				}
-
-				if (ghoul2[0].mFileName && ghoul2[0].mFileName[0])
-				{
-					strcpy(fName, ghoul2[0].mFileName);
-				}
-				else
-				{
-					strcpy(fName, "None?!");
-				}
-
-				ri->Printf( PRINT_ALL, "ERROR, GHOUL2 INSTANCE BEING REMOVED BELONGS TO A REFENTITY!\nThis is in caps because it's important. Tell Rich and save the following text.\n\n");
-				ri->Printf( PRINT_ALL, "Ref num: %i\nModel: %s\nFilename: %s\n", i, mName, fName);
-
-				R_SetRNumEntities(0); //avoid recursive error
-				Com_Error(ERR_DROP, "Write down or save this error message, show it to Rich\nRef num: %i\nModel: %s\nFilename: %s\n", i, mName, fName);
-			}
-			i++;
-		}
-#endif
 
 #ifdef _G2_GORE
 		G2API_ClearSkinGore ( ghoul2 );
@@ -730,7 +752,19 @@ void G2API_CleanGhoul2Models(CGhoul2Info_v **ghoul2Ptr)
 		G2_DEBUG_RemovePtrFromTracker(*ghoul2Ptr);
 #endif
 
-		delete *ghoul2Ptr;
+		std::set<ghoul2entry_t>::iterator i = std::find(ghoultable[0].begin(), ghoultable[0].end(), *ghoul2Ptr);
+		if (i != ghoultable[0].end()) {
+			delete i->ghoul2info;
+			ghoultable[0].erase(i);
+		}/* else {
+			i = std::find(ghoultable[1].begin(), ghoultable[1].end(), *ghoul2Ptr);
+			if (i != ghoultable[1].end()) {
+				delete i->ghoul2info;
+				ghoultable[1].erase(i);
+			}
+		}*/
+
+		//delete *ghoul2Ptr;
 		*ghoul2Ptr = NULL;
 	}
 }
@@ -761,6 +795,19 @@ qhandle_t G2API_PrecacheGhoul2Model( const char *fileName )
 }
 
 // initialise all that needs to be on a new Ghoul II model
+int G2API_VM_InitGhoul2Model(qhandle_t *hghoul2, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias) {
+	CGhoul2Info_v *ghoul2Ptr;
+	int ret;
+
+	ghoul2Ptr = GetGhoul2InfovByHandle(*hghoul2);
+	ret = G2API_InitGhoul2Model(&ghoul2Ptr, fileName, modelIndex, customSkin, customShader, modelFlags, lodBias);
+
+	*hghoul2 = GetHandleByGhoul2Infov(ghoul2Ptr);
+	return ret;
+}
+
+// initialise all that needs to be on a new Ghoul II model
 int G2API_InitGhoul2Model(CGhoul2Info_v **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
 						  qhandle_t customShader, int modelFlags, int lodBias)
 {
@@ -775,7 +822,12 @@ int G2API_InitGhoul2Model(CGhoul2Info_v **ghoul2Ptr, const char *fileName, int m
 
 	if (!(*ghoul2Ptr))
 	{
+		ghoul2entry_t entry;
 		*ghoul2Ptr = new CGhoul2Info_v;
+		entry.ghoul2info = *ghoul2Ptr;
+		entry.handle = currghoul2Handle++;
+		ghoultable[0].insert(entry);
+		//*ghoul2Ptr = new CGhoul2Info_v;
 #ifdef _FULL_G2_LEAK_CHECKING
 		if (g_G2AllocServer)
 		{
@@ -968,6 +1020,17 @@ qboolean G2API_HasGhoul2ModelOnIndex(CGhoul2Info_v **ghlRemove, const int modelI
 	return qtrue;
 }
 
+qboolean G2API_VM_RemoveGhoul2Model(qhandle_t *ghlRemove, const int modelIndex) {
+	CGhoul2Info_v *ghoul2Ptr;
+	qboolean ret;
+
+	ghoul2Ptr = GetGhoul2InfovByHandle(*ghlRemove);
+	ret = G2API_RemoveGhoul2Model(&ghoul2Ptr, modelIndex);
+
+	*ghlRemove = GetHandleByGhoul2Infov(ghoul2Ptr);
+	return ret;
+}
+
 qboolean G2API_RemoveGhoul2Model(CGhoul2Info_v **ghlRemove, const int modelIndex)
 {
 	CGhoul2Info_v &ghlInfo = **ghlRemove;
@@ -1041,7 +1104,12 @@ qboolean G2API_RemoveGhoul2Model(CGhoul2Info_v **ghlRemove, const int modelIndex
 			}
 			g_Ghoul2Allocations -= sizeof(*ghlRemove);
 #endif
-			delete *ghlRemove;
+			std::set<ghoul2entry_t>::iterator i = std::find(ghoultable[0].begin(), ghoultable[0].end(), *ghlRemove);
+			if (i != ghoultable[0].end()) {
+				delete i->ghoul2info;
+				ghoultable[0].erase(i);
+			}
+			//delete *ghlRemove;
 			*ghlRemove = NULL;
 		}
 	}
@@ -2404,10 +2472,17 @@ void G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, Eorientations flags, v
 }
 
 
-int G2API_CopyGhoul2Instance(CGhoul2Info_v &g2From, CGhoul2Info_v &g2To, int modelIndex)
+int G2API_CopyGhoul2Instance(CGhoul2Info_v *g2From_, CGhoul2Info_v *g2To_, int modelIndex)
 {
 	assert(modelIndex==-1); // copy individual bolted parts is not used in jk2 and I didn't want to deal with it
 							// if ya want it, we will add it back correctly
+
+	// Hack convert back to ref
+	if (!g2From_ || !g2To_) {
+		return -1;
+	}
+	CGhoul2Info_v &g2From = *g2From_;
+	CGhoul2Info_v &g2To = *g2To_;
 
 	//G2ERROR(ghoul2From.IsValid(),"Invalid ghlInfo");
 	if (g2From.IsValid())
@@ -2502,17 +2577,31 @@ int G2API_CopySpecificG2Model(CGhoul2Info_v &ghoul2From, int modelFrom, CGhoul2I
 }
 
 // This version will automatically copy everything about this model, and make a new one if necessary.
-void G2API_DuplicateGhoul2Instance(CGhoul2Info_v &g2From, CGhoul2Info_v **g2To)
+void G2API_VM_DuplicateGhoul2Instance(CGhoul2Info_v *g2From, qhandle_t *g2To) {
+	CGhoul2Info_v *toptr;
+
+	toptr = GetGhoul2InfovByHandle(*g2To);
+	G2API_DuplicateGhoul2Instance(g2From, &toptr);
+	*g2To = GetHandleByGhoul2Infov(toptr);
+}
+
+// This version will automatically copy everything about this model, and make a new one if necessary.
+void G2API_DuplicateGhoul2Instance(CGhoul2Info_v *g2From, CGhoul2Info_v **g2To)
 {
 	//int ignore;
 
-	if (*g2To)
+	if (!g2From || *g2To)
 	{	// This is bad.  We only want to do this if there is not yet a to declared.
 		assert(0);
 		return;
 	}
 
+	ghoul2entry_t entry;
 	*g2To = new CGhoul2Info_v;
+	entry.ghoul2info = *g2To;
+	entry.handle = currghoul2Handle++;
+	//*g2To = new CGhoul2Info_v;
+	ghoultable[0].insert(entry);
 #ifdef _FULL_G2_LEAK_CHECKING
 	if (g_G2AllocServer)
 	{
@@ -2525,9 +2614,10 @@ void G2API_DuplicateGhoul2Instance(CGhoul2Info_v &g2From, CGhoul2Info_v **g2To)
 	g_Ghoul2Allocations += sizeof(CGhoul2Info_v);
 	G2_DEBUG_ShovePtrInTracker(*g2To);
 #endif
-	CGhoul2Info_v &ghoul2 = *(*g2To);
+	//CGhoul2Info_v &ghoul2 = *(*g2To);
 
-	/*ignore = */G2API_CopyGhoul2Instance(g2From, ghoul2, -1);
+	///*ignore = */G2API_CopyGhoul2Instance(g2From, ghoul2, -1);
+	/*ignore = */G2API_CopyGhoul2Instance(g2From, *g2To, -1);
 
 	return;
 }

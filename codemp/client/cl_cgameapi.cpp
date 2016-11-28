@@ -28,6 +28,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "FXExport.h"
 #include "FxUtil.h"
 
+#include "ghoul2/ghoul2_shared.h"
+
 #include "qcommon/GenericParser2.h"
 #include "materials.h"
 
@@ -263,19 +265,19 @@ static qboolean CL_G2API_GetBoltMatrix_NoRecNoRot( void *ghoul2, const int model
 	return re->G2API_GetBoltMatrix( *((CGhoul2Info_v *)ghoul2), modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale );
 }*/
 
-static int CL_G2API_InitGhoul2Model( void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias ) {
+/*static int CL_G2API_InitGhoul2Model( void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias ) {
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 0;
 #endif
 	return re->G2API_InitGhoul2Model( (CGhoul2Info_v **)ghoul2Ptr, fileName, modelIndex, customSkin, customShader, modelFlags, lodBias );
-}
+}*/
 
-static qboolean CL_G2API_SetSkin( void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin ) {
+/*static qboolean CL_G2API_SetSkin( void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin ) {
 	if ( !ghoul2 ) return qfalse;
 	CGhoul2Info_v &g2 = *((CGhoul2Info_v *)ghoul2);
 	CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, modelIndex);
 	return re->G2API_SetSkin( ghlinfo, customSkin, renderSkin );
-}
+}*/
 
 static void CL_G2API_CollisionDetect( CollisionRecord_t *collRecMap, void* ghoul2, const vec3_t angles, const vec3_t position, int frameNumber, int entNum, vec3_t rayStart, vec3_t rayEnd, vec3_t scale, int traceFlags, int useLod, float fRadius ) {
 	if ( !ghoul2 ) return;
@@ -333,7 +335,7 @@ static void CL_G2API_GetGLAName( void *ghoul2, int modelIndex, char *fillBuf ) {
 		fillBuf[0] = '\0';
 }
 
-static int CL_G2API_CopyGhoul2Instance( void *g2From, void *g2To, int modelIndex ) {
+/*static int CL_G2API_CopyGhoul2Instance( void *g2From, void *g2To, int modelIndex ) {
 	if ( !g2From || !g2To ) return 0;
 
 	return re->G2API_CopyGhoul2Instance( *((CGhoul2Info_v *)g2From), *((CGhoul2Info_v *)g2To), modelIndex );
@@ -350,18 +352,18 @@ static void CL_G2API_DuplicateGhoul2Instance( void *g2From, void **g2To ) {
 #endif
 	if ( !g2From || !g2To ) return;
 	re->G2API_DuplicateGhoul2Instance( *((CGhoul2Info_v *)g2From), (CGhoul2Info_v **)g2To );
-}
+}*/
 
 /*static qboolean CL_G2API_HasGhoul2ModelOnIndex( void *ghlInfo, int modelIndex ) {
 	return re->G2API_HasGhoul2ModelOnIndex( (CGhoul2Info_v **)ghlInfo, modelIndex );
 }*/
 
-static qboolean CL_G2API_RemoveGhoul2Model( void *ghlInfo, int modelIndex ) {
+/*static qboolean CL_G2API_RemoveGhoul2Model( void *ghlInfo, int modelIndex ) {
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 0;
 #endif
 	return re->G2API_RemoveGhoul2Model( (CGhoul2Info_v **)ghlInfo, modelIndex );
-}
+}*/
 
 /*static int CL_G2API_GetNumGoreMarks( void *ghlInfo, int modelIndex ) {
 #ifdef _G2_GORE
@@ -953,10 +955,21 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return CL_G2API_GetBoltMatrix((void *)args[1], args[2], args[3], (mdxaBone_t *)VMA(4), (const float *)VMA(5),(const float *)VMA(6), args[7], (qhandle_t *)VMA(8), (float *)VMA(9));
 
 	case CG_G2_INITGHOUL2MODEL:
-		return CL_G2API_InitGhoul2Model((void **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4], (qhandle_t) args[5], args[6], args[7]);
+#if id386
+		return re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
+									  (qhandle_t) args[5], args[6], args[7]);
+#else
+		return re->G2API_VM_InitGhoul2Model((qhandle_t *)VMA(1), (const char *)VMA(2), args[3], (qhandle_t)args[4],
+			(qhandle_t)args[5], args[6], args[7]);
+#endif
 
 	case CG_G2_SETSKIN:
-		return CL_G2API_SetSkin( (void *)args[1], args[2], args[3], args[4] );
+	{
+		CGhoul2Info_v &g2 = *(GhoulHandle(args[1]));
+		CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, (qhandle_t)args[2]);
+
+		return re->G2API_SetSkin(ghlinfo, args[3], 0);
+	}
 
 	case CG_G2_COLLISIONDETECT:
 		CL_G2API_CollisionDetect ( (CollisionRecord_t*)VMA(1), (void *)args[2], (const float*)VMA(3), (const float*)VMA(4), args[5], args[6], (float*)VMA(7), (float*)VMA(8), (float*)VMA(9), args[10], args[11], VMF(12) );
@@ -981,18 +994,26 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case CG_G2_COPYGHOUL2INSTANCE:
-		return CL_G2API_CopyGhoul2Instance( (void *)args[1], (void *)args[2], args[3] );
+		return (int)re->G2API_CopyGhoul2Instance(GhoulHandle(args[1]), GhoulHandle(args[2]), args[3]);
 
 	case CG_G2_COPYSPECIFICGHOUL2MODEL:
-		CL_G2API_CopySpecificGhoul2Model( (void *)args[1], args[2], (void *)args[3], args[4] );
+		re->G2API_CopySpecificG2Model(*(GhoulHandle(args[1])), args[2], *(GhoulHandle(args[3])), args[4]);
 		return 0;
 
 	case CG_G2_DUPLICATEGHOUL2INSTANCE:
-		CL_G2API_DuplicateGhoul2Instance( (void *)args[1], (void **)VMA(2) );
+#if id386
+		re->G2API_DuplicateGhoul2Instance(GhoulHandle(args[1]), (CGhoul2Info_v **)VMA(2));
+#else
+		re->G2API_VM_DuplicateGhoul2Instance(GhoulHandle(args[1]), (qhandle_t *)VMA(2));
+#endif
 		return 0;
 
 	case CG_G2_REMOVEGHOUL2MODEL:
-		return CL_G2API_RemoveGhoul2Model( (void *)VMA(1), args[2]);
+#if id386
+		return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
+#else
+		return (int)re->G2API_VM_RemoveGhoul2Model((qhandle_t *)VMA(1), args[2]);
+#endif
 
 	case CG_G2_ADDSKINGORE:
 		CL_G2API_AddSkinGore( (void *)args[1], (SSkinGoreData *)VMA(2));

@@ -572,14 +572,14 @@ Ghoul2 Insert Start
 		return 0;
 
 	case UI_G2_HAVEWEGHOULMODELS:
-		return re->G2API_HaveWeGhoul2Models( *((CGhoul2Info_v *)args[1]) );
+		return re->G2API_HaveWeGhoul2Models( *(GhoulHandle(args[1])) );
 
 	case UI_G2_SETMODELS:
-		re->G2API_SetGhoul2ModelIndexes( *((CGhoul2Info_v *)args[1]),(qhandle_t *)VMA(2),(qhandle_t *)VMA(3));
+		re->G2API_SetGhoul2ModelIndexes( *(GhoulHandle(args[1])), (qhandle_t *)VMA(2),(qhandle_t *)VMA(3));
 		return 0;
 
 	case UI_G2_GETBOLT:
-		return re->G2API_GetBoltMatrix(*((CGhoul2Info_v *)args[1]), args[2], args[3], (mdxaBone_t *)VMA(4), (const float *)VMA(5),(const float *)VMA(6), args[7], (qhandle_t *)VMA(8), (float *)VMA(9));
+		return re->G2API_GetBoltMatrix( *(GhoulHandle(args[1])), args[2], args[3], (mdxaBone_t *)VMA(4), (const float *)VMA(5),(const float *)VMA(6), args[7], (qhandle_t *)VMA(8), (float *)VMA(9));
 
 	/*case UI_G2_GETBOLT_NOREC:
 		re->G2API_BoltMatrixReconstruction( qfalse );//gG2_GBMNoReconstruct = qtrue;
@@ -595,25 +595,37 @@ Ghoul2 Insert Start
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 0;
 #endif
-		return	re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4], (qhandle_t) args[5], args[6], args[7]);
+#if id386
+		return re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
+									  (qhandle_t) args[5], args[6], args[7]);
+#else
+		return re->G2API_VM_InitGhoul2Model((qhandle_t *)VMA(1), (const char *)VMA(2), args[3], (qhandle_t)args[4],
+			(qhandle_t)args[5], args[6], args[7]);
+#endif
+		//return	re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4], (qhandle_t) args[5], args[6], args[7]);
 
 	/*case UI_G2_COLLISIONDETECT:
 	case UI_G2_COLLISIONDETECTCACHE:
 		return 0; //not supported for ui*/
 
 	case UI_G2_ANGLEOVERRIDE:
-		return re->G2API_SetBoneAngles(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3), (float *)VMA(4), args[5], (const Eorientations) args[6], (const Eorientations) args[7], (const Eorientations) args[8], (qhandle_t *)VMA(9), args[10], args[11] );
+		return re->G2API_SetBoneAngles(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3), (float *)VMA(4), args[5], (const Eorientations) args[6], (const Eorientations) args[7], (const Eorientations) args[8], (qhandle_t *)VMA(9), args[10], args[11] );
 
 	case UI_G2_CLEANMODELS:
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 0;
 #endif
+#if id386
 		re->G2API_CleanGhoul2Models((CGhoul2Info_v **)VMA(1));
+#else
+		re->G2API_VM_CleanGhoul2Models((qhandle_t *)VMA(1));
+#endif
+		//re->G2API_CleanGhoul2Models((CGhoul2Info_v **)VMA(1));
 		//	re->G2API_CleanGhoul2Models((CGhoul2Info_v **)args[1]);
 		return 0;
 
 	case UI_G2_PLAYANIM:
-		return re->G2API_SetBoneAnim(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3), args[4], args[5], args[6], VMF(7), args[8], VMF(9), args[10]);
+		return re->G2API_SetBoneAnim(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3), args[4], args[5], args[6], VMF(7), args[8], VMF(9), args[10]);
 
 	/*case UI_G2_GETBONEANIM:
 		{
@@ -634,7 +646,7 @@ Ghoul2 Insert Start
 		}*/
 
 	case UI_G2_GETGLANAME:
-		return (intptr_t)re->G2API_GetGLAName(*((CGhoul2Info_v *)args[1]), args[2]);
+		return (intptr_t)re->G2API_GetGLAName(*(GhoulHandle(args[1])), args[2]);
 		/*{
 			char *point = ((char *)VMA(3));
 			char *local;
@@ -647,32 +659,42 @@ Ghoul2 Insert Start
 		return 0;*/
 
 	case UI_G2_COPYGHOUL2INSTANCE:
-		return (intptr_t)re->G2API_CopyGhoul2Instance(*((CGhoul2Info_v *)args[1]), *((CGhoul2Info_v *)args[2]), args[3]);
+		return (int)re->G2API_CopyGhoul2Instance(GhoulHandle(args[1]), GhoulHandle(args[2]), args[3]);
 
 	case UI_G2_COPYSPECIFICGHOUL2MODEL:
-		re->G2API_CopySpecificG2Model(*((CGhoul2Info_v *)args[1]), args[2], *((CGhoul2Info_v *)args[3]), args[4]);
+		re->G2API_CopySpecificG2Model(*(GhoulHandle(args[1])), args[2], *(GhoulHandle(args[3])), args[4]);
 		return 0;
 
 	case UI_G2_DUPLICATEGHOUL2INSTANCE:
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 0;
 #endif
-		re->G2API_DuplicateGhoul2Instance(*((CGhoul2Info_v *)args[1]), (CGhoul2Info_v **)VMA(2));
+#if id386
+		re->G2API_DuplicateGhoul2Instance(GhoulHandle(args[1]), (CGhoul2Info_v **)VMA(2));
+#else
+		re->G2API_VM_DuplicateGhoul2Instance(GhoulHandle(args[1]), (qhandle_t *)VMA(2));
+#endif
+		//re->G2API_DuplicateGhoul2Instance(*((CGhoul2Info_v *)args[1]), (CGhoul2Info_v **)VMA(2));
 		return 0;
 
 	case UI_G2_REMOVEGHOUL2MODEL:
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 0;
 #endif
-		return (intptr_t)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
+#if id386
+		return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
+#else
+		return (int)re->G2API_VM_RemoveGhoul2Model((qhandle_t *)VMA(1), args[2]);
+#endif
+		//return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
 		//return (int)G2API_RemoveGhoul2Model((CGhoul2Info_v **)args[1], args[2]);
 
 	case UI_G2_ADDBOLT:
-		return re->G2API_AddBolt(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3));
+		return re->G2API_AddBolt(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3));
 
 	case UI_G2_REMOVEBOLT:
 		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
+			CGhoul2Info_v &g2 = *(GhoulHandle(args[1]));//*((CGhoul2Info_v *)args[1]);
 			CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, (qhandle_t)args[2]);
 			return re->G2API_RemoveBolt(ghlinfo, args[3]);
 		}
@@ -683,7 +705,7 @@ Ghoul2 Insert Start
 
 #ifdef _SOF2	
 	case UI_G2_ADDSKINGORE:
-		re->G2API_AddSkinGore(*((CGhoul2Info_v *)args[1]),*(SSkinGoreData *)VMA(2));
+		re->G2API_AddSkinGore(GhoulHandle(args[1]), *(SSkinGoreData *)VMA(2));
 		return 0;
 #endif // _SOF2
 	/*case UI_G2_SETROOTSURFACE:
@@ -691,14 +713,14 @@ Ghoul2 Insert Start
 
 	case UI_G2_SETSURFACEONOFF:
 		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
+			CGhoul2Info_v &g2 = *(GhoulHandle(args[1]));//*((CGhoul2Info_v *)args[1]);
 			return re->G2API_SetSurfaceOnOff(g2, args[2], (const char *)VMA(3), args[4]);
 		}
 
 		return 0;
 	case UI_G2_SETSKIN:
 		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
+			CGhoul2Info_v &g2 = *(GhoulHandle(args[1]));//*((CGhoul2Info_v *)args[1]);
 			CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, (qhandle_t)args[2]);
 
 			return re->G2API_SetSkin(ghlinfo, args[3], 0);
@@ -706,8 +728,8 @@ Ghoul2 Insert Start
 
 	case UI_G2_ATTACHG2MODEL:
 		{
-			CGhoul2Info_v *g2From = ((CGhoul2Info_v *)args[1]);
-			CGhoul2Info_v *g2To = ((CGhoul2Info_v *)args[3]);
+			CGhoul2Info_v *g2From = GhoulHandle(args[1]);//((CGhoul2Info_v *)args[1]);
+			CGhoul2Info_v *g2To = GhoulHandle(args[3]);//((CGhoul2Info_v *)args[3]);
 
 			return re->G2API_AttachG2Model(*g2From, args[2], *g2To, args[4], args[5]);
 		}

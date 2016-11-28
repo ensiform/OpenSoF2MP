@@ -582,6 +582,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	// G2API
 	re.G2API_GetInfo						= G2API_GetInfo;
 	re.G2API_IsGhoul2InfovValid				= G2API_IsGhoul2InfovValid;
+	re.GetGhoul2InfovByHandle				= GetGhoul2InfovByHandle;
 
 	re.G2API_AddBolt						= G2API_AddBolt;
 	re.G2API_AddBoltSurfNum					= G2API_AddBoltSurfNum;
@@ -595,6 +596,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.G2API_BoltMatrixSPMethod				= G2API_BoltMatrixSPMethod;
 	re.G2API_CleanEntAttachments			= G2API_CleanEntAttachments;
 	re.G2API_CleanGhoul2Models				= G2API_CleanGhoul2Models;
+	re.G2API_VM_CleanGhoul2Models			= G2API_VM_CleanGhoul2Models;
 	re.G2API_ClearAttachedInstance			= G2API_ClearAttachedInstance;
 	re.G2API_CollisionDetect				= G2API_CollisionDetect;
 	re.G2API_CollisionDetectCache			= G2API_CollisionDetectCache;
@@ -603,6 +605,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.G2API_DetachG2Model					= G2API_DetachG2Model;
 	re.G2API_DoesBoneExist					= G2API_DoesBoneExist;
 	re.G2API_DuplicateGhoul2Instance		= G2API_DuplicateGhoul2Instance;
+	re.G2API_VM_DuplicateGhoul2Instance		= G2API_VM_DuplicateGhoul2Instance;
 	re.G2API_FreeSaveBuffer					= G2API_FreeSaveBuffer;
 	re.G2API_GetAnimFileName				= G2API_GetAnimFileName;
 	re.G2API_GetAnimFileNameIndex			= G2API_GetAnimFileNameIndex;
@@ -625,6 +628,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.G2API_HaveWeGhoul2Models				= G2API_HaveWeGhoul2Models;
 	re.G2API_IKMove							= G2API_IKMove;
 	re.G2API_InitGhoul2Model				= G2API_InitGhoul2Model;
+	re.G2API_VM_InitGhoul2Model				= G2API_VM_InitGhoul2Model;
 	re.G2API_IsPaused						= G2API_IsPaused;
 	re.G2API_ListBones						= G2API_ListBones;
 	re.G2API_ListSurfaces					= G2API_ListSurfaces;
@@ -641,6 +645,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp ) {
 	re.G2API_RemoveBolt						= G2API_RemoveBolt;
 	re.G2API_RemoveBone						= G2API_RemoveBone;
 	re.G2API_RemoveGhoul2Model				= G2API_RemoveGhoul2Model;
+	re.G2API_VM_RemoveGhoul2Model			= G2API_VM_RemoveGhoul2Model;
 	re.G2API_RemoveGhoul2Models				= G2API_RemoveGhoul2Models;
 	re.G2API_RemoveSurface					= G2API_RemoveSurface;
 	re.G2API_ResetRagDoll					= G2API_ResetRagDoll;

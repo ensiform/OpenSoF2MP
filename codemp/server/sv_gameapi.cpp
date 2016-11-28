@@ -903,14 +903,14 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case G_G2_HAVEWEGHOULMODELS:
-		return re->G2API_HaveWeGhoul2Models( *((CGhoul2Info_v *)args[1]) );
+		return re->G2API_HaveWeGhoul2Models( *(GhoulHandle(args[1])) );
 
 	case G_G2_SETMODELS:
-		re->G2API_SetGhoul2ModelIndexes( *((CGhoul2Info_v *)args[1]),(qhandle_t *)VMA(2),(qhandle_t *)VMA(3));
+		re->G2API_SetGhoul2ModelIndexes( *(GhoulHandle(args[1])), (qhandle_t *)VMA(2),(qhandle_t *)VMA(3));
 		return 0;
 
 	case G_G2_GETBOLT:
-		return re->G2API_GetBoltMatrix(*((CGhoul2Info_v *)args[1]), args[2], args[3], (mdxaBone_t *)VMA(4), (const float *)VMA(5),(const float *)VMA(6), args[7], (qhandle_t *)VMA(8), (float *)VMA(9));
+		return re->G2API_GetBoltMatrix( *(GhoulHandle(args[1])), args[2], args[3], (mdxaBone_t *)VMA(4), (const float *)VMA(5),(const float *)VMA(6), args[7], (qhandle_t *)VMA(8), (float *)VMA(9));
 
 	/*case G_G2_GETBOLT_NOREC:
 		re->G2API_BoltMatrixReconstruction( qfalse );//gG2_GBMNoReconstruct = qtrue;
@@ -925,12 +925,18 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 1;
 #endif
-		return	re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
+#if id386
+		return re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
 									  (qhandle_t) args[5], args[6], args[7]);
+#else
+		return re->G2API_VM_InitGhoul2Model((qhandle_t *)VMA(1), (const char *)VMA(2), args[3], (qhandle_t)args[4],
+			(qhandle_t)args[5], args[6], args[7]);
+#endif
+
 
 	case G_G2_SETSKIN:
 		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
+			CGhoul2Info_v &g2 = *(GhoulHandle(args[1]));
 			CGhoul2Info *ghlinfo = re->G2API_GetInfo( g2, (int)args[2] );
 
 			return re->G2API_SetSkin(ghlinfo, args[3], args[4]);
@@ -941,20 +947,19 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		break;*/
 
 	case G_G2_ADDBOLT:
-		return	re->G2API_AddBolt(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3));
+		return	re->G2API_AddBolt(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3));
 
 	case G_G2_SETBOLTINFO:
-		re->G2API_SetBoltInfo(*((CGhoul2Info_v *)args[1]), args[2], args[3]);
+		re->G2API_SetBoltInfo(*(GhoulHandle(args[1])), args[2], args[3]);
 		return 0;
 
 	case G_G2_ANGLEOVERRIDE:
-		return re->G2API_SetBoneAngles(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3), (float *)VMA(4), args[5],
+		return re->G2API_SetBoneAngles(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3), (float *)VMA(4), args[5],
 							 (const Eorientations) args[6], (const Eorientations) args[7], (const Eorientations) args[8],
 							 (qhandle_t *)VMA(9), args[10], args[11] );
 
 	case G_G2_PLAYANIM:
-		return re->G2API_SetBoneAnim(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3), args[4], args[5],
-								args[6], VMF(7), args[8], VMF(9), args[10]);
+		return re->G2API_SetBoneAnim(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3), args[4], args[5], args[6], VMF(7), args[8], VMF(9), args[10]);
 
 /*	case G_G2_GETBONEANIM:
 		{
@@ -970,7 +975,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		{ //Since returning a pointer in such a way to a VM seems to cause MASSIVE FAILURE<tm>, we will shove data into the pointer the vm passes instead
 			char *point = ((char *)VMA(3));
 			char *local;
-			local = re->G2API_GetGLAName(*((CGhoul2Info_v *)args[1]), args[2]);
+			local = re->G2API_GetGLAName(*(GhoulHandle(args[1])), args[2]);
 			if (local)
 			{
 				strcpy(point, local);
@@ -980,17 +985,22 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case G_G2_COPYGHOUL2INSTANCE:
-		return (int)re->G2API_CopyGhoul2Instance(*((CGhoul2Info_v *)args[1]), *((CGhoul2Info_v *)args[2]), args[3]);
+		return (int)re->G2API_CopyGhoul2Instance(GhoulHandle(args[1]), GhoulHandle(args[2]), args[3]);
 
 	case G_G2_COPYSPECIFICGHOUL2MODEL:
-		re->G2API_CopySpecificG2Model(*((CGhoul2Info_v *)args[1]), args[2], *((CGhoul2Info_v *)args[3]), args[4]);
+		re->G2API_CopySpecificG2Model(*(GhoulHandle(args[1])), args[2], *(GhoulHandle(args[3])), args[4]);
 		return 0;
 
 	case G_G2_DUPLICATEGHOUL2INSTANCE:
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 1;
 #endif
-		re->G2API_DuplicateGhoul2Instance(*((CGhoul2Info_v *)args[1]), (CGhoul2Info_v **)VMA(2));
+#if id386
+		re->G2API_DuplicateGhoul2Instance(GhoulHandle(args[1]), (CGhoul2Info_v **)VMA(2));
+#else
+		re->G2API_VM_DuplicateGhoul2Instance(GhoulHandle(args[1]), (qhandle_t *)VMA(2));
+#endif
+		//re->G2API_DuplicateGhoul2Instance(*((CGhoul2Info_v *)args[1]), (CGhoul2Info_v **)VMA(2));
 		return 0;
 
 /*	case G_G2_HASGHOUL2MODELONINDEX:
@@ -1001,8 +1011,13 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 1;
 #endif
+#if id386
+		return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2
+#else
+		return (int)re->G2API_VM_RemoveGhoul2Model((qhandle_t *)VMA(1), args[2]);
+#endif
 		//return (int)G2API_RemoveGhoul2Model((CGhoul2Info_v **)args[1], args[2]);
-		return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
+		//return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
 
 	/*case G_G2_REMOVEGHOUL2MODELS:
 #ifdef _FULL_G2_LEAK_CHECKING
@@ -1015,7 +1030,11 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 #ifdef _FULL_G2_LEAK_CHECKING
 		g_G2AllocServer = 1;
 #endif
+#if id386
 		re->G2API_CleanGhoul2Models((CGhoul2Info_v **)VMA(1));
+#else
+		re->G2API_VM_CleanGhoul2Models((qhandle_t *)VMA(1));
+#endif
 	//	re->G2API_CleanGhoul2Models((CGhoul2Info_v **)args[1]);
 		return 0;
 
@@ -1027,154 +1046,6 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		re->G2API_CollisionDetectCache ( (CollisionRecord_t*)VMA(1), *((CGhoul2Info_v *)args[2]), (const float*)VMA(3), (const float*)VMA(4), args[5], args[6], (float*)VMA(7), (float*)VMA(8), (float*)VMA(9), G2VertSpaceServer, args[10], args[11], VMF(12) );
 		return 0;*/
 
-#if 0
-	case G_G2_SETROOTSURFACE:
-		return re->G2API_SetRootSurface(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3));
-
-	case G_G2_SETSURFACEONOFF:
-		return re->G2API_SetSurfaceOnOff(*((CGhoul2Info_v *)args[1]), (const char *)VMA(2), /*(const int)VMA(3)*/args[3]);
-
-	case G_G2_SETNEWORIGIN:
-		return re->G2API_SetNewOrigin(*((CGhoul2Info_v *)args[1]), /*(const int)VMA(2)*/args[2]);
-
-	case G_G2_DOESBONEEXIST:
-		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
-			return re->G2API_DoesBoneExist(g2, args[2], (const char *)VMA(3));
-		}
-
-	case G_G2_GETSURFACERENDERSTATUS:
-	{
-		CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
-
-		return re->G2API_GetSurfaceRenderStatus(g2, args[2], (const char *)VMA(3));
-	}
-
-	case G_G2_ABSURDSMOOTHING:
-		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
-
-			re->G2API_AbsurdSmoothing(g2, (qboolean)args[2]);
-		}
-		return 0;
-
-	case G_G2_SETRAGDOLL:
-		{
-			//Convert the info in the shared structure over to the class-based version.
-			sharedRagDollParams_t *rdParamst = (sharedRagDollParams_t *)VMA(2);
-			CRagDollParams rdParams;
-
-			if (!rdParamst)
-			{
-				re->G2API_ResetRagDoll(*((CGhoul2Info_v *)args[1]));
-				return 0;
-			}
-
-			VectorCopy(rdParamst->angles, rdParams.angles);
-			VectorCopy(rdParamst->position, rdParams.position);
-			VectorCopy(rdParamst->scale, rdParams.scale);
-			VectorCopy(rdParamst->pelvisAnglesOffset, rdParams.pelvisAnglesOffset);
-			VectorCopy(rdParamst->pelvisPositionOffset, rdParams.pelvisPositionOffset);
-
-			rdParams.fImpactStrength = rdParamst->fImpactStrength;
-			rdParams.fShotStrength = rdParamst->fShotStrength;
-			rdParams.me = rdParamst->me;
-
-			rdParams.startFrame = rdParamst->startFrame;
-			rdParams.endFrame = rdParamst->endFrame;
-
-			rdParams.collisionType = rdParamst->collisionType;
-			rdParams.CallRagDollBegin = rdParamst->CallRagDollBegin;
-
-			rdParams.RagPhase = (CRagDollParams::ERagPhase)rdParamst->RagPhase;
-			rdParams.effectorsToTurnOff = (CRagDollParams::ERagEffector)rdParamst->effectorsToTurnOff;
-
-			re->G2API_SetRagDoll(*((CGhoul2Info_v *)args[1]), &rdParams);
-		}
-		return 0;
-		break;
-	case G_G2_ANIMATEG2MODELS:
-		{
-			sharedRagDollUpdateParams_t *rduParamst = (sharedRagDollUpdateParams_t *)VMA(3);
-			CRagDollUpdateParams rduParams;
-
-			if (!rduParamst)
-			{
-				return 0;
-			}
-
-			VectorCopy(rduParamst->angles, rduParams.angles);
-			VectorCopy(rduParamst->position, rduParams.position);
-			VectorCopy(rduParamst->scale, rduParams.scale);
-			VectorCopy(rduParamst->velocity, rduParams.velocity);
-
-			rduParams.me = rduParamst->me;
-			rduParams.settleFrame = rduParamst->settleFrame;
-
-			re->G2API_AnimateG2ModelsRag(*((CGhoul2Info_v *)args[1]), args[2], &rduParams);
-		}
-		return 0;
-		break;
-
-	//additional ragdoll options -rww
-	case G_G2_RAGPCJCONSTRAINT:
-		return re->G2API_RagPCJConstraint(*((CGhoul2Info_v *)args[1]), (const char *)VMA(2), (float *)VMA(3), (float *)VMA(4));
-	case G_G2_RAGPCJGRADIENTSPEED:
-		return re->G2API_RagPCJGradientSpeed(*((CGhoul2Info_v *)args[1]), (const char *)VMA(2), VMF(3));
-	case G_G2_RAGEFFECTORGOAL:
-		return re->G2API_RagEffectorGoal(*((CGhoul2Info_v *)args[1]), (const char *)VMA(2), (float *)VMA(3));
-	case G_G2_GETRAGBONEPOS:
-		return re->G2API_GetRagBonePos(*((CGhoul2Info_v *)args[1]), (const char *)VMA(2), (float *)VMA(3), (float *)VMA(4), (float *)VMA(5), (float *)VMA(6));
-	case G_G2_RAGEFFECTORKICK:
-		return re->G2API_RagEffectorKick(*((CGhoul2Info_v *)args[1]), (const char *)VMA(2), (float *)VMA(3));
-	case G_G2_RAGFORCESOLVE:
-		return re->G2API_RagForceSolve(*((CGhoul2Info_v *)args[1]), (qboolean)args[2]);
-
-	case G_G2_SETBONEIKSTATE:
-		return re->G2API_SetBoneIKState(*((CGhoul2Info_v *)args[1]), args[2], (const char *)VMA(3), args[4], (sharedSetBoneIKStateParams_t *)VMA(5));
-	case G_G2_IKMOVE:
-		return re->G2API_IKMove(*((CGhoul2Info_v *)args[1]), args[2], (sharedIKMoveParams_t *)VMA(3));
-
-	case G_G2_REMOVEBONE:
-		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
-
-			return re->G2API_RemoveBone(g2, args[3], (const char *)VMA(2));
-		}
-
-	case G_G2_ATTACHINSTANCETOENTNUM:
-		{
-			re->G2API_AttachInstanceToEntNum(*((CGhoul2Info_v *)args[1]), args[2], (qboolean)args[3]);
-		}
-		return 0;
-	case G_G2_CLEARATTACHEDINSTANCE:
-		re->G2API_ClearAttachedInstance(args[1]);
-		return 0;
-	case G_G2_CLEANENTATTACHMENTS:
-		re->G2API_CleanEntAttachments();
-		return 0;
-	case G_G2_OVERRIDESERVER:
-		{
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
-			return re->G2API_OverrideServerWithClientData(g2, 0);
-		}
-
-	case G_G2_GETSURFACENAME:
-		{ //Since returning a pointer in such a way to a VM seems to cause MASSIVE FAILURE<tm>, we will shove data into the pointer the vm passes instead
-			char *point = ((char *)VMA(4));
-			char *local;
-			int modelindex = args[3];
-
-			CGhoul2Info_v &g2 = *((CGhoul2Info_v *)args[1]);
-
-			local = re->G2API_GetSurfaceName(g2, modelindex, args[2]);
-			if (local)
-			{
-				strcpy(point, local);
-			}
-		}
-		return 0;
-#endif
 
 	case G_SET_ACTIVE_SUBBSP:
 		SV_SetActiveSubBSP(args[1]);
