@@ -1436,7 +1436,7 @@ Cvar_Register
 basically a slightly modified Cvar_Get for the interpreted modules
 =====================
 */
-void	Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, uint32_t flags ) {
+void	Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultValue, uint32_t flags, float minValue, float maxValue ) {
 	cvar_t	*cv;
 
 	// There is code in Cvar_Get to prevent CVAR_ROM cvars being changed by the user. In other words CVAR_ARCHIVE and
@@ -1450,6 +1450,10 @@ void	Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultVa
 	cv = Cvar_Get( varName, defaultValue, flags | CVAR_VM_CREATED );
 	if ( !vmCvar ) {
 		return;
+	}
+	if( minValue != 0.0f && maxValue != 0.0f ) {
+		qboolean integral = (Q_isintegral(minValue) && Q_isintegral(maxValue) ) ? qtrue : qfalse;
+		Cvar_CheckRange( cv, minValue, maxValue, integral );
 	}
 	vmCvar->handle = cv - cvar_indexes;
 	vmCvar->modificationCount = -1;

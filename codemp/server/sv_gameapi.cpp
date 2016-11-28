@@ -358,7 +358,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return Sys_Milliseconds();
 
 	case G_CVAR_REGISTER:
-		Cvar_Register( (vmCvar_t *)VMA(1), (const char *)VMA(2), (const char *)VMA(3), args[4] );
+		Cvar_Register( (vmCvar_t *)VMA(1), (const char *)VMA(2), (const char *)VMA(3), args[4], VMF(5), VMF(6) );
 		return 0;
 
 	case G_CVAR_UPDATE:
