@@ -843,7 +843,7 @@ intptr_t QDECL VM_Call( vm_t *vm, int callnum, intptr_t arg0, intptr_t arg1, int
 	++vm->callLevel;
 	// if we have a dll loaded, call it directly
 	if ( vm->main ) {
-		return vm->main( callnum, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
+		r = vm->main( callnum, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
 			arg9, arg10, arg11 );
 	}
 	else
