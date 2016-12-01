@@ -687,10 +687,8 @@ cvar_t *Cvar_User_Set( const char *var_name, const char *value) {
 }
 
 static const char *legacyCvars[] = {
-	"bg_fighterAltControl",
 	"g_dlURL",
 	"g_synchronousClients",
-	"jp_DlBaseURL",
 	"pmove_fixed",
 	"pmove_float",
 	"pmove_msec",
@@ -1451,7 +1449,7 @@ void	Cvar_Register( vmCvar_t *vmCvar, const char *varName, const char *defaultVa
 	if ( !vmCvar ) {
 		return;
 	}
-	if( minValue != 0.0f && maxValue != 0.0f ) {
+	if( ( flags & CVAR_LOCK_RANGE ) /*minValue != 0.0f && maxValue != 0.0f*/ ) {
 		qboolean integral = (Q_isintegral(minValue) && Q_isintegral(maxValue) ) ? qtrue : qfalse;
 		Cvar_CheckRange( cv, minValue, maxValue, integral );
 	}

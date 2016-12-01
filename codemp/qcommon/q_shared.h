@@ -600,10 +600,10 @@ Many variables can be used for cheating purposes, so when cheats is zero,
 #define CVAR_NORESTART		(0x00000400u)	// do not clear when a cvar_restart is issued
 #define CVAR_INTERNAL		(0x00000800u)	// cvar won't be displayed, ever (for passwords and such)
 #define	CVAR_PARENTAL		(0x00001000u)	// lets cvar system know that parental stuff needs to be updated
-#define CVAR_SERVER_CREATED	(0x00002000u)	// cvar was created by a server the client connected to.
+#define CVAR_LOCK_RANGE		(0x00002000u)	// cvar was created by a server the client connected to.
 #define CVAR_VM_CREATED		(0x00004000u)	// cvar was created exclusively in one of the VMs.
 #define CVAR_PROTECTED		(0x00008000u)	// prevent modifying this var from VMs or the server
-#define CVAR_LOCK_RANGE		(0x00010000u)	// enforces the mins / maxs
+#define CVAR_SERVER_CREATED	(0x00010000u)	// enforces the mins / maxs
 // These flags are only returned by the Cvar_Flags() function
 #define CVAR_MODIFIED		(0x40000000u)	// Cvar was modified
 #define CVAR_NONEXISTENT	(0x80000000u)	// Cvar doesn't exist.
