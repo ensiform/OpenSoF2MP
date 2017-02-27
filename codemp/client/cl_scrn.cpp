@@ -38,6 +38,40 @@ cvar_t		*cl_graphshift;
 
 /*
 ================
+SCR_AdjustFrom640
+Adjusted for resolution and screen aspect ratio
+================
+*/
+void SCR_AdjustFrom640( float *x, float *y, float *w, float *h ) {
+	float	xscale;
+	float	yscale;
+
+#if 0
+		// adjust for wide screens
+		if ( cls.glconfig.vidWidth * 480 > cls.glconfig.vidHeight * 640 ) {
+			*x += 0.5 * ( cls.glconfig.vidWidth - ( cls.glconfig.vidHeight * 640 / 480 ) );
+		}
+#endif
+
+	// scale for screen sizes
+	xscale = cls.glconfig.vidWidth / 640.0;
+	yscale = cls.glconfig.vidHeight / 480.0;
+	if ( x ) {
+		*x *= xscale;
+	}
+	if ( y ) {
+		*y *= yscale;
+	}
+	if ( w ) {
+		*w *= xscale;
+	}
+	if ( h ) {
+		*h *= yscale;
+	}
+}
+
+/*
+================
 SCR_DrawNamedPic
 
 Coordinates are 640*480 virtual values
@@ -49,9 +83,9 @@ void SCR_DrawNamedPic( float x, float y, float width, float height, const char *
 	assert( width != 0 );
 
 	hShader = re->RegisterShader( picname );
+	SCR_AdjustFrom640( &x, &y, &width, &height );
 	re->DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
-
 
 /*
 ================
@@ -63,11 +97,40 @@ Coordinates are 640*480 virtual values
 void SCR_FillRect( float x, float y, float width, float height, const float *color ) {
 	re->SetColor( color );
 
+	SCR_AdjustFrom640( &x, &y, &width, &height );
 	re->DrawStretchPic( x, y, width, height, 0, 0, 0, 0, cls.whiteShader );
 
 	re->SetColor( NULL );
 }
 
+void SCR_DrawSides(float x, float y, float w, float h) {
+	SCR_AdjustFrom640( &x, &y, &w, &h );
+	re->DrawStretchPic( x, y, 1, h, 0, 0, 0, 0, cls.whiteShader );
+	re->DrawStretchPic( x + w - 1, y, 1, h, 0, 0, 0, 0, cls.whiteShader );
+}
+
+void SCR_DrawTopBottom(float x, float y, float w, float h) {
+	SCR_AdjustFrom640( &x, &y, &w, &h );
+	re->DrawStretchPic( x, y, w, 1, 0, 0, 0, 0, cls.whiteShader );
+	re->DrawStretchPic( x, y + h - 1, w, 1, 0, 0, 0, 0, cls.whiteShader );
+}
+
+/*
+================
+SCR_DrawRect
+
+Coordinates are 640*480 virtual values
+=================
+*/
+void SCR_DrawRect( float x, float y, float width, float height, const float *color ) 
+{
+	re->SetColor( color );
+
+	SCR_DrawTopBottom( x, y, width, height );
+	SCR_DrawSides( x, y, width, height );
+
+	re->SetColor( NULL );
+}
 
 /*
 ================
@@ -77,10 +140,9 @@ Coordinates are 640*480 virtual values
 =================
 */
 void SCR_DrawPic( float x, float y, float width, float height, qhandle_t hShader ) {
+	//SCR_AdjustFrom640( &x, &y, &width, &height );
 	re->DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
-
-
 
 /*
 ** SCR_DrawChar
@@ -105,6 +167,7 @@ static void SCR_DrawChar( int x, int y, float size, int ch ) {
 	ay = y;
 	aw = size;
 	ah = size;
+	SCR_AdjustFrom640( &ax, &ay, &aw, &ah );
 
 	row = ch>>4;
 	col = ch&15;

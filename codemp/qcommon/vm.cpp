@@ -345,7 +345,7 @@ qboolean FS_Which(const char *filename, void *searchPath);
 int FS_FindVM(void **startSearch, char *found, int foundlen, const char *name, int enableDll);
 long FS_ReadFileDir(const char *qpath, void *searchPath, qboolean unpure, void **buffer);
 
-#define LOCAL_POOL_SIZE 2048000
+#define LOCAL_POOL_SIZE 4194304
 
 vmHeader_t *VM_LoadQVM( vm_t *vm, qboolean alloc, qboolean unpure)
 {
@@ -535,6 +535,10 @@ vm_t *VM_Restart( vm_t *vm, qboolean unpure ) {
 	return vm;
 }
 
+qboolean VM_IsNative( const vm_t *vm ) {
+	return (vm && vm->dllHandle != nullptr) ? qtrue : qfalse;
+}
+
 static byte * dllLocalPool = 0;
 
 vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInterpret_t interpret ) {
@@ -564,11 +568,29 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 	else
 		Com_sprintf( vm->name, sizeof(vm->name), "gt_%s", Cvar_VariableString("g_gametype") );
 
+	if( interpret == VMI_NATIVE )
+	{
+		vm->dllHandle = Sys_LoadGameDll(vm->name, &vm->main, VM_DllSyscall);
+
+		if(vm->dllHandle)
+		{
+			vm->syscall = systemCalls;
+			// allocate memory for local allocs
+			vm->localPoolStart = 0;
+			vm->localPoolSize = 0;
+			vm->localPoolTail = LOCAL_POOL_SIZE;
+			dllLocalPool = (unsigned char *)Hunk_Alloc(LOCAL_POOL_SIZE, h_high);
+			return vm;
+		}
+			
+		Com_Printf("Failed loading dll, trying next\n");
+	}
+
 	do
 	{
-		retval = FS_FindVM(&startSearch, filename, sizeof(filename), vm->name, (interpret == VMI_NATIVE));
+		retval = FS_FindVM(&startSearch, filename, sizeof(filename), vm->name, qfalse/*(interpret == VMI_NATIVE)*/);
 		
-		if(retval == VMI_NATIVE)
+		/*if(retval == VMI_NATIVE)
 		{
 			Com_Printf("Try loading dll file %s\n", filename);
 
@@ -587,7 +609,7 @@ vm_t *VM_Create( vmSlots_t vmSlot, intptr_t( *systemCalls )(intptr_t *), vmInter
 			
 			Com_Printf("Failed loading dll, trying next\n");
 		}
-		else if(retval == VMI_COMPILED)
+		else */if(retval == VMI_COMPILED)
 		{
 			vm->searchPath = startSearch;
 			if((header = VM_LoadQVM(vm, qtrue, qfalse)))
@@ -959,16 +981,16 @@ void VM_VmInfo_f( void ) {
 		Com_Printf( "%s : ", vm->name );
 		if ( vm->dllHandle ) {
 			Com_Printf( "native\n" );
-			continue;
-		}
-		if ( vm->compiled ) {
+		} else if ( vm->compiled ) {
 			Com_Printf( "compiled on load\n" );
 		} else {
 			Com_Printf( "interpreted\n" );
 		}
-		Com_Printf( "    code length : %7i\n", vm->codeLength );
-		Com_Printf( "    table length: %7i\n", vm->instructionCount*4 );
-		Com_Printf( "    data length : %7i\n", vm->dataMask + 1 );
+		if (!vm->dllHandle) {
+			Com_Printf( "    code length : %7i\n", vm->codeLength );
+			Com_Printf( "    table length: %7i\n", vm->instructionCount*4 );
+			Com_Printf( "    data length : %7i\n", vm->dataMask + 1 );
+		}
 	}
 }
 

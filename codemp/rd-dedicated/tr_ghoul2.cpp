@@ -3377,7 +3377,7 @@ qboolean R_LoadMDXM( model_t *mod, void *buffer, const char *mod_name, qboolean 
 	}
 
 	// first up, go load in the animation file we need that has the skeletal animation info for this model
-	if (strstr(mdxm->animName, "/weapons/") != 0) {
+	if (strstr(mdxm->animName, "/weapons/") != 0 || strstr(mdxm->animName, "default") != 0 ) {
 		mdxm->animIndex = RE_RegisterModel(va ("%s.gla",mdxm->animName));
 	} else {
 		mdxm->animIndex = RE_RegisterModel(va ("%s_mp.gla",mdxm->animName));

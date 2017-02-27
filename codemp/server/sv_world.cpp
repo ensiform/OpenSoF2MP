@@ -525,16 +525,6 @@ SV_ClipMoveToEntities
 
 ====================
 */
-#ifndef FINAL_BUILD
-static float VectorDistance(vec3_t p1, vec3_t p2)
-{
-	vec3_t dir;
-
-	VectorSubtract(p2, p1, dir);
-	return VectorLength(dir);
-}
-#endif
-
 static void SV_ClipMoveToEntities( moveclip_t *clip ) {
 	static int	touchlist[MAX_GENTITIES];
 	int			i, num;

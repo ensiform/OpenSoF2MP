@@ -429,7 +429,7 @@ static void DoSyscall(void)
 
 #if defined(idx64)
 		args[0] = ~vm_syscallNum;
-		for(index = 1; index < ARRAY_LEN(args); index++)
+		for(index = 1; index < (int)ARRAY_LEN(args); index++)
 			args[index] = data[index];
 			
 		*ret = savedVM->syscall(args);

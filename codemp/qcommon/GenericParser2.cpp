@@ -959,6 +959,7 @@ qhandle_t GP_VM_Parse(char **dataPtr, bool cleanFirst, bool writeable)
 
 	entry.gp2 = parse;
 	entry.handle = currgp2Handle++;
+	gp2table.insert(entry);
 	if (parse->Parse(dataPtr, cleanFirst, writeable))
 	{
 		return entry.handle;
@@ -986,6 +987,11 @@ void GP_VM_Delete(qhandle_t *handle)
 	if(!gp2)
 		return;
 	delete gp2;
+	gp2entry_t ventry(nullptr, *handle);
+	const auto &it = gp2table.find(ventry);
+	if (it != gp2table.end()) {
+		gp2table.erase(it);
+	}
 	*handle = 0;
 }
 

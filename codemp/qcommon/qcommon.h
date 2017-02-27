@@ -307,6 +307,7 @@ struct vm_t {
 
 	byte		*dataBase;
 	int			dataMask;
+
 	int			localPoolStart;
 	int			localPoolSize;
 	int			localPoolTail;

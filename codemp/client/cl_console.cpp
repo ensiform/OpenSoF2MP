@@ -298,8 +298,11 @@ void Con_CheckResize (void)
 	else
 	{
 		// on wide screens, we will center the text
-		con.xadjust = 1;//640.0f / cls.glconfig.vidWidth;
-		con.yadjust = 1;//480.0f / cls.glconfig.vidHeight;
+		con.xadjust = 1;
+		con.yadjust = 1;
+		//SCR_AdjustFrom640( &con.xadjust, NULL, NULL, NULL );
+		//con.xadjust = 1;//640.0f / cls.glconfig.vidWidth;
+		//con.yadjust = 1;//480.0f / cls.glconfig.vidHeight;
 
 		oldwidth = con.linewidth;
 		con.linewidth = width;

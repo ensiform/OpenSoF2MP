@@ -33,6 +33,11 @@ botlib_export_t	*botlib_export;
 
 // game interface
 static vm_t *gvm; // game vm, valid for legacy and new api
+static vm_t *gtvm; // game vm, valid for legacy and new api
+
+qboolean VM_IsNative( const vm_t *vm );
+
+void SV_BindGametype( void );
 
 //
 // game vmMain calls
@@ -94,6 +99,23 @@ void GVM_GametypeCommand( int cmd, int arg0, int arg1, int arg2, int arg3, int a
 	VM_Call( gvm, GAME_GAMETYPE_COMMAND, cmd, arg0, arg1, arg2, arg3, arg4 );
 }
 
+void GTVM_InitGame( int restart ) {
+	VM_Call( gtvm, GAMETYPE_INIT, restart );
+}
+
+void GTVM_Start( int startTime ) {
+	VM_Call( gtvm, GAMETYPE_START, startTime );
+}
+
+void GTVM_RunFrame( int levelTime ) {
+	VM_Call( gtvm, GAMETYPE_RUN_FRAME, levelTime );
+}
+
+int GTVM_Event( int event, int time, int arg0, int arg1, int arg2, int arg3, int arg4 ) {
+	return VM_Call( gtvm, GAMETYPE_EVENT, event, time, arg0, arg1, arg2, arg3, arg4 );
+}
+
+#define GhoulHandleVMCheck( x ) ( VM_IsNative(gvm) ? (CGhoul2Info_v *)x : GhoulHandle(x) )
 
 //
 // game syscalls
@@ -903,14 +925,14 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case G_G2_HAVEWEGHOULMODELS:
-		return re->G2API_HaveWeGhoul2Models( *(GhoulHandle(args[1])) );
+		return re->G2API_HaveWeGhoul2Models( *(GhoulHandleVMCheck(args[1])) );
 
 	case G_G2_SETMODELS:
-		re->G2API_SetGhoul2ModelIndexes( *(GhoulHandle(args[1])), (qhandle_t *)VMA(2),(qhandle_t *)VMA(3));
+		re->G2API_SetGhoul2ModelIndexes( *(GhoulHandleVMCheck(args[1])), (qhandle_t *)VMA(2),(qhandle_t *)VMA(3));
 		return 0;
 
 	case G_G2_GETBOLT:
-		return re->G2API_GetBoltMatrix( *(GhoulHandle(args[1])), args[2], args[3], (mdxaBone_t *)VMA(4), (const float *)VMA(5),(const float *)VMA(6), args[7], (qhandle_t *)VMA(8), (float *)VMA(9));
+		return re->G2API_GetBoltMatrix( *(GhoulHandleVMCheck(args[1])), args[2], args[3], (mdxaBone_t *)VMA(4), (const float *)VMA(5),(const float *)VMA(6), args[7], (qhandle_t *)VMA(8), (float *)VMA(9));
 
 	/*case G_G2_GETBOLT_NOREC:
 		re->G2API_BoltMatrixReconstruction( qfalse );//gG2_GBMNoReconstruct = qtrue;
@@ -929,14 +951,18 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
 									  (qhandle_t) args[5], args[6], args[7]);
 #else
-		return re->G2API_VM_InitGhoul2Model((qhandle_t *)VMA(1), (const char *)VMA(2), args[3], (qhandle_t)args[4],
-			(qhandle_t)args[5], args[6], args[7]);
+		if( VM_IsNative( gvm ) )
+			return re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
+				(qhandle_t) args[5], args[6], args[7]);
+		else
+			return re->G2API_VM_InitGhoul2Model((qhandle_t *)VMA(1), (const char *)VMA(2), args[3], (qhandle_t)args[4],
+				(qhandle_t)args[5], args[6], args[7]);
 #endif
 
 
 	case G_G2_SETSKIN:
 		{
-			CGhoul2Info_v &g2 = *(GhoulHandle(args[1]));
+			CGhoul2Info_v &g2 = *(GhoulHandleVMCheck(args[1]));
 			CGhoul2Info *ghlinfo = re->G2API_GetInfo( g2, (int)args[2] );
 
 			return re->G2API_SetSkin(ghlinfo, args[3], args[4]);
@@ -947,19 +973,19 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		break;*/
 
 	case G_G2_ADDBOLT:
-		return	re->G2API_AddBolt(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3));
+		return re->G2API_AddBolt(*(GhoulHandleVMCheck(args[1])), args[2], (const char *)VMA(3));
 
 	case G_G2_SETBOLTINFO:
-		re->G2API_SetBoltInfo(*(GhoulHandle(args[1])), args[2], args[3]);
+		re->G2API_SetBoltInfo(*(GhoulHandleVMCheck(args[1])), args[2], args[3]);
 		return 0;
 
 	case G_G2_ANGLEOVERRIDE:
-		return re->G2API_SetBoneAngles(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3), (float *)VMA(4), args[5],
+		return re->G2API_SetBoneAngles(*(GhoulHandleVMCheck(args[1])), args[2], (const char *)VMA(3), (float *)VMA(4), args[5],
 							 (const Eorientations) args[6], (const Eorientations) args[7], (const Eorientations) args[8],
 							 (qhandle_t *)VMA(9), args[10], args[11] );
 
 	case G_G2_PLAYANIM:
-		return re->G2API_SetBoneAnim(*(GhoulHandle(args[1])), args[2], (const char *)VMA(3), args[4], args[5], args[6], VMF(7), args[8], VMF(9), args[10]);
+		return re->G2API_SetBoneAnim(*(GhoulHandleVMCheck(args[1])), args[2], (const char *)VMA(3), args[4], args[5], args[6], VMF(7), args[8], VMF(9), args[10]);
 
 /*	case G_G2_GETBONEANIM:
 		{
@@ -975,7 +1001,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		{ //Since returning a pointer in such a way to a VM seems to cause MASSIVE FAILURE<tm>, we will shove data into the pointer the vm passes instead
 			char *point = ((char *)VMA(3));
 			char *local;
-			local = re->G2API_GetGLAName(*(GhoulHandle(args[1])), args[2]);
+			local = re->G2API_GetGLAName(*(GhoulHandleVMCheck(args[1])), args[2]);
 			if (local)
 			{
 				strcpy(point, local);
@@ -985,10 +1011,10 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case G_G2_COPYGHOUL2INSTANCE:
-		return (int)re->G2API_CopyGhoul2Instance(GhoulHandle(args[1]), GhoulHandle(args[2]), args[3]);
+		return (int)re->G2API_CopyGhoul2Instance(GhoulHandleVMCheck(args[1]), GhoulHandleVMCheck(args[2]), args[3]);
 
 	case G_G2_COPYSPECIFICGHOUL2MODEL:
-		re->G2API_CopySpecificG2Model(*(GhoulHandle(args[1])), args[2], *(GhoulHandle(args[3])), args[4]);
+		re->G2API_CopySpecificG2Model(*(GhoulHandleVMCheck(args[1])), args[2], *(GhoulHandleVMCheck(args[3])), args[4]);
 		return 0;
 
 	case G_G2_DUPLICATEGHOUL2INSTANCE:
@@ -998,7 +1024,10 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 #if id386
 		re->G2API_DuplicateGhoul2Instance(GhoulHandle(args[1]), (CGhoul2Info_v **)VMA(2));
 #else
-		re->G2API_VM_DuplicateGhoul2Instance(GhoulHandle(args[1]), (qhandle_t *)VMA(2));
+		if( VM_IsNative( gvm ) )
+			re->G2API_DuplicateGhoul2Instance((CGhoul2Info_v *)args[1], (CGhoul2Info_v **)VMA(2));
+		else
+			re->G2API_VM_DuplicateGhoul2Instance(GhoulHandle(args[1]), (qhandle_t *)VMA(2));
 #endif
 		//re->G2API_DuplicateGhoul2Instance(*((CGhoul2Info_v *)args[1]), (CGhoul2Info_v **)VMA(2));
 		return 0;
@@ -1014,7 +1043,10 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 #if id386
 		return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2
 #else
-		return (int)re->G2API_VM_RemoveGhoul2Model((qhandle_t *)VMA(1), args[2]);
+		if( VM_IsNative( gvm ) )
+			return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
+		else
+			return (int)re->G2API_VM_RemoveGhoul2Model((qhandle_t *)VMA(1), args[2]);
 #endif
 		//return (int)G2API_RemoveGhoul2Model((CGhoul2Info_v **)args[1], args[2]);
 		//return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
@@ -1033,7 +1065,10 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 #if id386
 		re->G2API_CleanGhoul2Models((CGhoul2Info_v **)VMA(1));
 #else
-		re->G2API_VM_CleanGhoul2Models((qhandle_t *)VMA(1));
+		if( VM_IsNative( gvm ) )
+			re->G2API_CleanGhoul2Models((CGhoul2Info_v **)VMA(1));
+		else
+			re->G2API_VM_CleanGhoul2Models((qhandle_t *)VMA(1));
 #endif
 	//	re->G2API_CleanGhoul2Models((CGhoul2Info_v **)args[1]);
 		return 0;
@@ -1080,25 +1115,37 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return (intptr_t)VM_Local_StringAlloc((char *) VMA(1));
 
 	case G_GP_PARSE:
-		return GP_VM_Parse( (char **) VMA(1), (bool) args[2], (bool) args[3] );
+		if( VM_IsNative( gvm ) )
+			return (intptr_t)GP_Parse((char **) VMA(1), (bool) args[2], (bool) args[3]);
+		else
+			return GP_VM_Parse( (char **) VMA(1), (bool) args[2], (bool) args[3] );
 		//return (intptr_t)GP_Parse((char **) VMA(1), (bool) args[2], (bool) args[3]);
 	case G_GP_PARSE_FILE:
 		{
 			char * data;
 			FS_ReadFile((char *) VMA(1), (void **) &data);
-			return GP_VM_Parse( &data, (bool) args[2], (bool) args[3] );
+			if( VM_IsNative( gvm ) )
+				return (intptr_t)GP_Parse(&data, (bool) args[2], (bool) args[3]);
+			else
+				return GP_VM_Parse( &data, (bool) args[2], (bool) args[3] );
 			//return (intptr_t)GP_Parse(&data, (bool) args[2], (bool) args[3]);
 		}
 	case G_GP_CLEAN:
-		GP_VM_Clean( (qhandle_t *)VMA(1) );
-		//GP_Clean((TGenericParser2) args[1]);
+		if( VM_IsNative( gvm ) )
+			GP_Clean((TGenericParser2) VMA(1));
+		else
+			GP_VM_Clean( (qhandle_t *)VMA(1) );
+		//GP_Clean((TGenericParser2) VMA(1));
 		return 0;
 	case G_GP_DELETE:
-		GP_VM_Delete( (qhandle_t *)VMA(1) );
+		if( VM_IsNative( gvm ) )
+			GP_Delete((TGenericParser2 *) VMA(1));
+		else
+			GP_VM_Delete( (qhandle_t *)VMA(1) );
 		//GP_Delete((TGenericParser2 *) VMA(1));
 		return 0;
 	case G_GP_GET_BASE_PARSE_GROUP:
-		return (intptr_t)GP_GetBaseParseGroup((TGenericParser2) VMA(1));
+		return (intptr_t)GP_GetBaseParseGroup((TGenericParser2)VMA(1) );
 
 	case G_GPG_GET_NAME:
 		return (intptr_t)GPG_GetName((TGPGroup) VMA(1), (char *) VMA(2));
@@ -1150,27 +1197,121 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return (intptr_t)GPV_GetList((TGPValue) VMA(1));
 
 	case G_GT_INIT:
-		//SOF2 TODO
-		//  const char* gametype, qboolean restart
+		{
+			SV_BindGametype();
+			GTVM_InitGame( args[2] );
+		}
 		return 0;
 	case G_GT_RUNFRAME:
-		//SOF2 TODO
-		// int time
+		GTVM_RunFrame( args[1] );
 		return 0;
 	case G_GT_START:
-		//SOF2 TODO
-		// int time
+		GTVM_Start( args[1] );
 		return 0;
 	case G_GT_SENDEVENT:
-		//SOF2 TODO
-		// int event, int time, int arg0, int arg1, int arg2, int arg3, int arg4
-		return 0;
+		return GTVM_Event( args[1], args[2], args[3], args[4], args[5], args[6], args[7] );
 
 	default:
 		Com_Error( ERR_DROP, "Bad game system trap: %ld", (long int) args[0] );
 	}
 	return -1;
 }
+
+intptr_t SV_GameTypeSystemCalls( intptr_t *args ) {
+	switch( args[0] ) {
+
+		//rww - alright, DO NOT EVER add a game/cgame/ui generic call without adding a trap to match, and
+		//all of these traps must be shared and have cases in sv_game, cl_cgame, and cl_ui. They must also
+		//all be in the same order, and start at 100.
+	case TRAP_MEMSET:
+		Com_Memset( VMA(1), args[2], args[3] );
+		return 0;
+
+	case TRAP_MEMCPY:
+		Com_Memcpy( VMA(1), VMA(2), args[3] );
+		return 0;
+
+	case TRAP_STRNCPY:
+		strncpy( (char *)VMA(1), (const char *)VMA(2), args[3] );
+		return args[1];
+
+	case TRAP_SIN:
+		return FloatAsInt( sin( VMF(1) ) );
+
+	case TRAP_COS:
+		return FloatAsInt( cos( VMF(1) ) );
+
+	case TRAP_ATAN2:
+		return FloatAsInt( atan2( VMF(1), VMF(2) ) );
+
+	case TRAP_SQRT:
+		return FloatAsInt( sqrt( VMF(1) ) );
+
+	case TRAP_MATRIXMULTIPLY:
+		MatrixMultiply( (vec3_t *)VMA(1), (vec3_t *)VMA(2), (vec3_t *)VMA(3) );
+		return 0;
+
+	case TRAP_ANGLEVECTORS:
+		AngleVectors( (const float *)VMA(1), (float *)VMA(2), (float *)VMA(3), (float *)VMA(4) );
+		return 0;
+
+	case TRAP_PERPENDICULARVECTOR:
+		PerpendicularVector( (float *)VMA(1), (const float *)VMA(2) );
+		return 0;
+
+	case TRAP_FLOOR:
+		return FloatAsInt( floor( VMF(1) ) );
+
+	case TRAP_CEIL:
+		return FloatAsInt( ceil( VMF(1) ) );
+
+	case TRAP_TESTPRINTINT:
+		return 0;
+
+	case TRAP_TESTPRINTFLOAT:
+		return 0;
+
+	case TRAP_ACOS:
+		return FloatAsInt( Q_acos( VMF(1) ) );
+
+	case TRAP_ASIN:
+		return FloatAsInt( Q_asin( VMF(1) ) );
+
+	case GT_PRINT:
+		Com_Printf( "%s", VMA(1) );
+		return 0;
+
+	case GT_ERROR:
+		Com_Error( ERR_DROP, "%s", VMA(1) );
+		return 0;
+
+	case GT_MILLISECONDS:
+		return Sys_Milliseconds();
+
+	case GT_CVAR_REGISTER:
+		Cvar_Register( (vmCvar_t *)VMA(1), (const char *)VMA(2), (const char *)VMA(3), args[4], VMF(5), VMF(6) );
+		return 0;
+
+	case GT_CVAR_UPDATE:
+		Cvar_Update( (vmCvar_t *)VMA(1) );
+		return 0;
+
+	case GT_CVAR_SET:
+		Cvar_VM_Set( (const char *)VMA(1), (const char *)VMA(2), VM_GAMETYPE );
+		return 0;
+
+	case GT_CVAR_VARIABLE_INTEGER_VALUE:
+		return Cvar_VariableIntegerValue( (const char *)VMA(1) );
+
+	case GT_CVAR_VARIABLE_STRING_BUFFER:
+		Cvar_VariableStringBuffer( (const char *)VMA(1), (char *)VMA(2), args[3] );
+		return 0;
+	default:
+		Com_Error( ERR_DROP, "Bad gametype system trap: %ld", (long int) args[0] );
+	}
+	return -1;
+}
+
 
 void SV_InitGame( qboolean restart ) {
 	int i=0;
@@ -1185,21 +1326,40 @@ void SV_InitGame( qboolean restart ) {
 }
 
 void SV_BindGame( void ) {
-	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, (vmInterpret_t)Cvar_VariableValue( "vm_game" ) );
+	vmInterpret_t interpret = (vmInterpret_t)Cvar_VariableValue( "vm_game" );
+	interpret = VMI_NATIVE;
+	gvm = VM_Create( VM_GAME, SV_GameSystemCalls, interpret );
 	if ( !gvm ) {
 		svs.gameStarted = qfalse;
 		Com_Error( ERR_DROP, "VM_Create on game failed" );
 	}
 }
 
+void SV_BindGametype( void ) {
+	vmInterpret_t interpret = (vmInterpret_t)Cvar_VariableValue( "vm_game" );
+	interpret = VMI_NATIVE;
+	gtvm = VM_Create( VM_GAMETYPE, SV_GameTypeSystemCalls, interpret );
+	if ( !gtvm ) {
+		svs.gameTypeStarted = qfalse;
+		Com_Error( ERR_DROP, "VM_Create on gametype failed" );
+	}
+}
+
+void SV_UnbindGametype( void ) {
+	VM_Free( gtvm );
+	gtvm = NULL;
+}
+
 void SV_UnbindGame( void ) {
 	GVM_ShutdownGame( qfalse );
+	SV_UnbindGametype();
 	VM_Free( gvm );
 	gvm = NULL;
 }
 
 void SV_RestartGame( void ) {
 	GVM_ShutdownGame( qtrue );
+	SV_UnbindGametype();
 
 	gvm = VM_Restart( gvm, qtrue );
 	SV_BindGame();

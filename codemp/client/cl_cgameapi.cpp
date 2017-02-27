@@ -39,6 +39,8 @@ extern botlib_export_t *botlib_export;
 // cgame interface
 static vm_t *cgvm; // cgame vm, valid for legacy and new api
 
+qboolean VM_IsNative( const vm_t *vm );
+
 //
 // cgame vmMain calls
 //
@@ -153,6 +155,8 @@ void CGVM_CameraShake( void ) {
 	VM_Call( cgvm, CG_FX_CAMERASHAKE );
 }
 
+
+#define GhoulHandleVMCheck( x ) ( VM_IsNative(cgvm) ? (CGhoul2Info_v *)x : GhoulHandle(x) )
 
 //
 // cgame syscalls
@@ -959,13 +963,17 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
 									  (qhandle_t) args[5], args[6], args[7]);
 #else
-		return re->G2API_VM_InitGhoul2Model((qhandle_t *)VMA(1), (const char *)VMA(2), args[3], (qhandle_t)args[4],
-			(qhandle_t)args[5], args[6], args[7]);
+		if( VM_IsNative( cgvm ) )
+			return re->G2API_InitGhoul2Model((CGhoul2Info_v **)VMA(1), (const char *)VMA(2), args[3], (qhandle_t) args[4],
+				(qhandle_t) args[5], args[6], args[7]);
+		else
+			return re->G2API_VM_InitGhoul2Model((qhandle_t *)VMA(1), (const char *)VMA(2), args[3], (qhandle_t)args[4],
+				(qhandle_t)args[5], args[6], args[7]);
 #endif
 
 	case CG_G2_SETSKIN:
 	{
-		CGhoul2Info_v &g2 = *(GhoulHandle(args[1]));
+		CGhoul2Info_v &g2 = *(GhoulHandleVMCheck(args[1]));
 		CGhoul2Info *ghlinfo = re->G2API_GetInfo(g2, (qhandle_t)args[2]);
 
 		return re->G2API_SetSkin(ghlinfo, args[3], 0);
@@ -983,28 +991,39 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return CL_G2API_SetBoneAngles( (void *)args[1], args[2], (const char *)VMA(3), (float *)VMA(4), args[5], args[6], args[7], args[8], (qhandle_t *)VMA(9), args[10], args[11] );
 
 	case CG_G2_CLEANMODELS:
+#if id386
 		CL_G2API_CleanGhoul2Models( (void **)VMA(1) );
+#else
+		if( VM_IsNative( cgvm ) )
+			re->G2API_CleanGhoul2Models((CGhoul2Info_v **)VMA(1));
+		else
+			re->G2API_VM_CleanGhoul2Models((qhandle_t *)VMA(1));
+#endif
 		return 0;
 
 	case CG_G2_PLAYANIM:
 		return CL_G2API_SetBoneAnim( (void *)args[1], args[2], (const char *)VMA(3), args[4], args[5], args[6], VMF(7), args[8], VMF(9), args[10] );
 
 	case CG_G2_GETGLANAME:
-		CL_G2API_GetGLAName( (void *)args[1], args[2], (char *)VMA(3) );
+		return (intptr_t)re->G2API_GetGLAName(*(GhoulHandleVMCheck(args[1])), args[2]);
+		//CL_G2API_GetGLAName( (void *)args[1], args[2], (char *)VMA(3) );
 		return 0;
 
 	case CG_G2_COPYGHOUL2INSTANCE:
-		return (int)re->G2API_CopyGhoul2Instance(GhoulHandle(args[1]), GhoulHandle(args[2]), args[3]);
+		return (int)re->G2API_CopyGhoul2Instance(GhoulHandleVMCheck(args[1]), GhoulHandleVMCheck(args[2]), args[3]);
 
 	case CG_G2_COPYSPECIFICGHOUL2MODEL:
-		re->G2API_CopySpecificG2Model(*(GhoulHandle(args[1])), args[2], *(GhoulHandle(args[3])), args[4]);
+		re->G2API_CopySpecificG2Model(*(GhoulHandleVMCheck(args[1])), args[2], *(GhoulHandleVMCheck(args[3])), args[4]);
 		return 0;
 
 	case CG_G2_DUPLICATEGHOUL2INSTANCE:
 #if id386
 		re->G2API_DuplicateGhoul2Instance(GhoulHandle(args[1]), (CGhoul2Info_v **)VMA(2));
 #else
-		re->G2API_VM_DuplicateGhoul2Instance(GhoulHandle(args[1]), (qhandle_t *)VMA(2));
+		if( VM_IsNative( cgvm ) )
+			re->G2API_DuplicateGhoul2Instance((CGhoul2Info_v *)args[1], (CGhoul2Info_v **)VMA(2));
+		else
+			re->G2API_VM_DuplicateGhoul2Instance(GhoulHandle(args[1]), (qhandle_t *)VMA(2));
 #endif
 		return 0;
 
@@ -1012,7 +1031,10 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 #if id386
 		return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
 #else
-		return (int)re->G2API_VM_RemoveGhoul2Model((qhandle_t *)VMA(1), args[2]);
+		if( VM_IsNative( cgvm ) )
+			return (int)re->G2API_RemoveGhoul2Model((CGhoul2Info_v **)VMA(1), args[2]);
+		else
+			return (int)re->G2API_VM_RemoveGhoul2Model((qhandle_t *)VMA(1), args[2]);
 #endif
 
 	case CG_G2_ADDSKINGORE:
@@ -1066,21 +1088,33 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 
 	case GP_PARSE:
-		return GP_VM_Parse( (char **) VMA(1), (bool) args[2], (bool) args[3] );
+		if( VM_IsNative( cgvm ) )
+			return (intptr_t)GP_Parse((char **) VMA(1), (bool) args[2], (bool) args[3]);
+		else
+			return GP_VM_Parse( (char **) VMA(1), (bool) args[2], (bool) args[3] );
 		//return (intptr_t)GP_Parse((char **) VMA(1), (bool) args[2], (bool) args[3]);
 	case GP_PARSE_FILE:
 		{
 			char * data;
 			FS_ReadFile((char *) VMA(1), (void **) &data);
-			return GP_VM_Parse( &data, (bool) args[2], (bool) args[3] );
+			if( VM_IsNative( cgvm ) )
+				return (intptr_t)GP_Parse(&data, (bool) args[2], (bool) args[3]);
+			else
+				return GP_VM_Parse( &data, (bool) args[2], (bool) args[3] );
 			//return (intptr_t)GP_Parse(&data, (bool) args[2], (bool) args[3]);
 		}
 	case GP_CLEAN:
-		GP_VM_Clean( (qhandle_t *)VMA(1) );
-		//GP_Clean((TGenericParser2) args[1]);
+		if( VM_IsNative( cgvm ) )
+			GP_Clean((TGenericParser2) VMA(1));
+		else
+			GP_VM_Clean( (qhandle_t *)VMA(1) );
+		//GP_Clean((TGenericParser2) VMA(1));
 		return 0;
 	case GP_DELETE:
-		GP_VM_Delete( (qhandle_t *)VMA(1) );
+		if( VM_IsNative( cgvm ) )
+			GP_Delete((TGenericParser2 *) VMA(1));
+		else
+			GP_VM_Delete( (qhandle_t *)VMA(1) );
 		//GP_Delete((TGenericParser2 *) VMA(1));
 		return 0;
 	case GP_GET_BASE_PARSE_GROUP:
@@ -1163,6 +1197,9 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return re->RegisterSkin((const char *)VMA(1), args[2], (char *)VMA(3) );
 	case CG_G2_GETANIMFILENAMEINDEX:
 		{
+			void *testnull = (void *)args[1];
+			if(!testnull)
+				return 0;
 			CGhoul2Info_v &ghoul2 = *((CGhoul2Info_v *)args[1]);
 			CGhoul2Info *ghlinfo = re->G2API_GetInfo(ghoul2, (qhandle_t)args[2]);
 			char * srcFilename;
@@ -1215,7 +1252,11 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_G2_GETBOLTINDEX:
 		{
-			CGhoul2Info_v &ghoul2 = *((CGhoul2Info_v *)args[1]);
+			void *testnull = (void *)args[1];
+			if(!testnull)
+				return 0;
+			//CGhoul2Info_v &ghoul2 = *((CGhoul2Info_v *)args[1]);
+			CGhoul2Info_v &ghoul2 = *(GhoulHandleVMCheck(args[1]));
 			CGhoul2Info *ghlinfo = re->G2API_GetInfo(ghoul2, (qhandle_t)args[2]);
 			//SOF2 TODO
 			return re->G2API_GetBoltIndex(ghlinfo, args[2]);
@@ -1231,7 +1272,8 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 	case CG_G2_SETGHOUL2MODELFLAGSBYINDEX:
 		{
-			CGhoul2Info_v &ghoul2 = *((CGhoul2Info_v *)args[1]);
+			//CGhoul2Info_v &ghoul2 = *((CGhoul2Info_v *)args[1]);
+			CGhoul2Info_v &ghoul2 = *(GhoulHandleVMCheck(args[1]));
 			CGhoul2Info *ghlinfo = re->G2API_GetInfo(ghoul2, (qhandle_t)args[2]);
 			re->G2API_SetGhoul2ModelFlags(ghlinfo, args[3]);
 			return 0;
@@ -1275,6 +1317,8 @@ void CL_BindCGame( void ) {
 		if(interpret != VMI_COMPILED && interpret != VMI_BYTECODE)
 			interpret = VMI_COMPILED;
 	}
+
+	interpret = VMI_NATIVE;
 
 	cgvm = VM_Create( VM_CGAME, CL_CgameSystemCalls, interpret );
 	if ( !cgvm ) {

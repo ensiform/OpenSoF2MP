@@ -246,7 +246,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 	backEndData->entities[r_numentities].e = *ent;
 	backEndData->entities[r_numentities].lightingCalculated = qfalse;
 
-	if (ent->ghoul2)
+	/*if (ent->ghoul2)
 	{
 		CGhoul2Info_v	&ghoul2 = *((CGhoul2Info_v *)ent->ghoul2);
 
@@ -254,7 +254,7 @@ void RE_AddRefEntityToScene( const refEntity_t *ent ) {
 		{
 			ri->Printf( PRINT_ALL, "Your ghoul2 instance has no model!\n");
 		}
-	}
+	}*/
 
 	/*
 	if (ent->reType == RT_ENT_CHAIN)

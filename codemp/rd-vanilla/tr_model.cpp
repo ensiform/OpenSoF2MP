@@ -872,7 +872,11 @@ qboolean ServerLoadMDXM( model_t *mod, void *buffer, const char *mod_name, qbool
 	}
 
 	// first up, go load in the animation file we need that has the skeletal animation info for this model
-	mdxm->animIndex = RE_RegisterServerModel(va ("%s_mp.gla",mdxm->animName));
+	if (strstr(mdxm->animName, "/weapons/") != 0 || strstr(mdxm->animName, "default") != 0 ) {
+		mdxm->animIndex = RE_RegisterServerModel(va ("%s.gla",mdxm->animName));
+	} else {
+		mdxm->animIndex = RE_RegisterServerModel(va ("%s_mp.gla",mdxm->animName));
+	}
 	if (!mdxm->animIndex)
 	{
 		return qfalse;
@@ -1262,7 +1266,7 @@ Ghoul2 Insert Start
 
 	if (name[0] == '*')
 	{	// don't create a bad model for a bsp model
-		if (Q_stricmp(name, "*default_mp.gla"))
+		if (Q_stricmp(name, "*default_mp.gla") && Q_stricmp(name, "*default.gla"))
 		{
 			return 0;
 		}

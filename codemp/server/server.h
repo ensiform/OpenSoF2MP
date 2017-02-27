@@ -208,6 +208,7 @@ typedef struct serverStatic_s {
 	netadr_t	authorizeAddress;			// for rcon return messages
 
 	qboolean	gameStarted;				// gvm is loaded
+	qboolean	gameTypeStarted;			// gtvm is loaded
 } serverStatic_t;
 
 #define SERVER_MAXBANS	1024
